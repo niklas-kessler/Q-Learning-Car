@@ -41,7 +41,7 @@ car.y = CAR_START_POSITION_Y
 # test
 car.velocity_x = 100
 car.velocity_y = 100
-car.velocity_rotation = 30
+car.rotation_speed = 30
 # test end
 
 

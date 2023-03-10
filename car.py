@@ -7,7 +7,7 @@ class Car(pyglet.sprite.Sprite):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.velocity_x, self.velocity_y, self.velocity_rotation = 0.0, 0.0, 0.0
+        self.velocity_x, self.velocity_y, self.rotation_speed = 0.0, 0.0, 0.0
 
     def check_boundaries(self):
         min_x = self.image.width // 2
@@ -29,5 +29,5 @@ class Car(pyglet.sprite.Sprite):
         # Update position and rotation
         self.x += self.velocity_x * dt
         self.y += self.velocity_y * dt
-        self.rotation += self.velocity_rotation * dt
+        self.rotation += self.rotation_speed * dt
         self.check_boundaries()
