@@ -1,5 +1,5 @@
 import pyglet as pg
-import car
+from car import Car
 from game_constants import *
 
 
@@ -18,13 +18,14 @@ pg.resource.reindex()
 
 game_window = pg.window.Window(height=WINDOW_HEIGHT, width=WINDOW_WIDTH)
 
+
 # IMAGES
 racetrack_img = pg.resource.image('racetrack.png')
 resize_image(racetrack_img, RACETRACK_WIDTH, RACETRACK_HEIGHT)
 center_image(racetrack_img)
 
 car_img = pg.resource.image('car.png')
-resize_image(car_img, CAR_WIDTH, CAR_HEIGHT)
+resize_image(car_img, Car.IMG_WIDTH, Car.IMG_HEIGHT)
 center_image(car_img)
 
 
@@ -33,26 +34,20 @@ racetrack = pg.sprite.Sprite(img=racetrack_img)
 racetrack.x = game_window.width // 2
 racetrack.y = game_window.height // 2
 
-car = car.Car(img=car_img)
-car.x = CAR_START_POSITION_X
-car.y = CAR_START_POSITION_Y
+agent = Car(img=car_img)
 
-# test
-car.velocity_x = 100
-car.velocity_y = 100
-car.rotation_speed = 30
-# test end
+game_window.push_handlers(agent)
 
 
 def update(dt):
-    car.update(dt)
+    agent.update(dt)
 
 
 @game_window.event
 def on_draw():
     game_window.clear()
     racetrack.draw()
-    car.draw()
+    agent.draw()
 
 
 if __name__ == '__main__':
