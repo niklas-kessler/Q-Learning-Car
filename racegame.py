@@ -2,37 +2,36 @@ import pyglet as pg
 import car
 from game_constants import *
 
-pg.resource.path = ['./resources']
-pg.resource.reindex()
-
-game_window = pg.window.Window(height=WINDOW_HEIGHT, width=WINDOW_WIDTH)
-
 
 def center_image(img):
     img.anchor_x = img.width//2
     img.anchor_y = img.height//2
 
 
-def center_sprite(sprite):
-    sprite.x = game_window.width // 2
-    sprite.y = game_window.height // 2
+def resize_image(img, width, height):
+    img.width = width
+    img.height = height
 
+
+pg.resource.path = ['./resources']
+pg.resource.reindex()
+
+game_window = pg.window.Window(height=WINDOW_HEIGHT, width=WINDOW_WIDTH)
 
 # IMAGES
 racetrack_img = pg.resource.image('racetrack.png')
-racetrack_img.width = RACETRACK_WIDTH
-racetrack_img.height = RACETRACK_HEIGHT
+resize_image(racetrack_img, RACETRACK_WIDTH, RACETRACK_HEIGHT)
 center_image(racetrack_img)
 
 car_img = pg.resource.image('car.png')
-car_img.width = CAR_WIDTH
-car_img.height = CAR_HEIGHT
+resize_image(car_img, CAR_WIDTH, CAR_HEIGHT)
 center_image(car_img)
 
 
-# SPRITES
+# SPRITES AND POSITIONING
 racetrack = pg.sprite.Sprite(img=racetrack_img)
-center_sprite(racetrack)
+racetrack.x = game_window.width // 2
+racetrack.y = game_window.height // 2
 
 car = car.Car(img=car_img)
 car.x = CAR_START_POSITION_X
