@@ -8,17 +8,20 @@ class Car(pyglet.sprite.Sprite):
 
     CAR_START_POSITION_X = 165
     CAR_START_POSITION_Y = 320
-    IMG_WIDTH = 16
-    IMG_HEIGHT = 32
+    IMG_WIDTH = 12
+    IMG_HEIGHT = 24
+    MAX_VELOCITY = 200
+    MIN_VELOCITY = -MAX_VELOCITY
+    THRUST = 350.0
+    FRICTION_DELAY = 0.015
     ROTATION_SPEED = 200.0
-    THRUST = 200.0
 
     def __init__(self, x_pos=CAR_START_POSITION_X, y_pos=CAR_START_POSITION_Y, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.x = x_pos
         self.y = y_pos
-        self.velocity_x, self.velocity_y = 0.0, 0.0
+        self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
 
     def check_boundaries(self):
@@ -36,11 +39,23 @@ class Car(pyglet.sprite.Sprite):
         elif self.y > max_y:
             self.y = max_y
 
+    def calc_velocity(self, dt):
+        # natural deceleration
+        self.velocity *= (1 - self.FRICTION_DELAY)
+        self.velocity -= (self.FRICTION_DELAY * self.velocity) * dt
+
+        # split up velocity in x and y
+        rad = math.radians(self.rotation)
+        velocity_x = math.sin(rad) * self.velocity
+        velocity_y = math.cos(rad) * self.velocity
+        return velocity_x, velocity_y
+
     def update(self, dt):
         """This method should be called at least once per frame."""
         # Update position and rotation
-        self.x += self.velocity_x * dt
-        self.y += self.velocity_y * dt
+        velocity_x, velocity_y = self.calc_velocity(dt)
+        self.x += velocity_x * dt
+        self.y += velocity_y * dt
         self.check_boundaries()
 
         if self.keys['left']:
@@ -48,17 +63,11 @@ class Car(pyglet.sprite.Sprite):
         if self.keys['right']:
             self.rotation += self.ROTATION_SPEED * dt
         if self.keys['up']:
-            rad = math.radians(self.rotation)
-            x_force = math.sin(rad) * self.THRUST
-            y_force = math.cos(rad) * self.THRUST
-            self.velocity_x += x_force * dt
-            self.velocity_y += y_force * dt
+            if self.velocity < self.MAX_VELOCITY:
+                self.velocity += self.THRUST * dt
         if self.keys['down']:
-            rad = math.radians(self.rotation)
-            x_force = math.sin(rad) * self.THRUST
-            y_force = math.cos(rad) * self.THRUST
-            self.velocity_x -= x_force * dt
-            self.velocity_y -= y_force * dt
+            if self.velocity > self.MIN_VELOCITY:
+                self.velocity -= self.THRUST * dt
 
     def on_key_press(self, symbol, modifiers):
         if symbol == key.UP:
