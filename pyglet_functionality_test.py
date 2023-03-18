@@ -31,4 +31,5 @@ def on_draw():
     label.draw()
     image.blit(window.width//1.5, window.height//1.5)
 
+
 pyglet.app.run()

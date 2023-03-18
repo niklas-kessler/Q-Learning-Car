@@ -13,16 +13,17 @@ class Car(pyglet.sprite.Sprite):
     MAX_VELOCITY = 200
     MIN_VELOCITY = -MAX_VELOCITY
     THRUST = 350.0
-    FRICTION_DELAY = 0.015
+    FRICTION_DELAY = 0.6
     ROTATION_SPEED = 200.0
 
-    def __init__(self, x_pos=CAR_START_POSITION_X, y_pos=CAR_START_POSITION_Y, *args, **kwargs):
+    def __init__(self, x_pos=CAR_START_POSITION_X, y_pos=CAR_START_POSITION_Y, user_controls=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.x = x_pos
         self.y = y_pos
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
+        self.user_controls = user_controls
 
     def check_boundaries(self):
         min_x = self.image.width // 2
@@ -41,7 +42,6 @@ class Car(pyglet.sprite.Sprite):
 
     def calc_velocity(self, dt):
         # natural deceleration
-        self.velocity *= (1 - self.FRICTION_DELAY)
         self.velocity -= (self.FRICTION_DELAY * self.velocity) * dt
 
         # split up velocity in x and y
@@ -69,6 +69,7 @@ class Car(pyglet.sprite.Sprite):
             if self.velocity > self.MIN_VELOCITY:
                 self.velocity -= self.THRUST * dt
 
+    # User controls
     def on_key_press(self, symbol, modifiers):
         if symbol == key.UP:
             self.keys['up'] = True

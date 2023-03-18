@@ -34,9 +34,10 @@ racetrack = pg.sprite.Sprite(img=racetrack_img)
 racetrack.x = game_window.width // 2
 racetrack.y = game_window.height // 2
 
-agent = Car(img=car_img)
+agent = Car(img=car_img, user_controls=True)
 
-game_window.push_handlers(agent)
+if agent.user_controls:
+    game_window.push_handlers(agent)
 
 
 def update(dt):
