@@ -1,14 +1,15 @@
-import pyglet
+import pyglet as pg
 from pyglet.window import key, mouse
 
-pyglet.resource.path = ['./resources']
+pg.resource.path = ['./resources']
 
-window = pyglet.window.Window()
-label = pyglet.text.Label('Hello world!', x=window.width//2, y=window.height//2,
+window = pg.window.Window()
+label = pg.text.Label('Hello world!', x=window.width//2, y=window.height//2,
                           anchor_x='center', anchor_y='center',
                           font_name='Times New Roman', font_size=30,
-                          color=(120,120,0,255))
-image = pyglet.resource.image('car.png')
+                          color=(180,180,0,255))
+line = pg.shapes.Line(25,100,100,25)
+image = pg.resource.image('car.png')
 
 
 @window.event
@@ -30,6 +31,7 @@ def on_draw():
     window.clear()
     label.draw()
     image.blit(window.width//1.5, window.height//1.5)
+    line.draw()
 
 
-pyglet.app.run()
+pg.app.run()
