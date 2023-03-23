@@ -15,20 +15,19 @@ class Car(pg.sprite.Sprite):
     FRICTION_DELAY = 0.6
     ROTATION_SPEED = 200.0
 
-    def __init__(self, x_pos=CAR_START_POSITION_X, y_pos=CAR_START_POSITION_Y, user_controls=False, *args, **kwargs):
+    def __init__(self, x_pos=CAR_START_POSITION_X, y_pos=CAR_START_POSITION_Y, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.x = x_pos
         self.y = y_pos
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
-        self.user_controls = user_controls
 
     def check_boundaries(self):
         min_x = self.image.width // 2
         min_y = self.image.height // 2
-        max_x = WINDOW_WIDTH - self.image.width // 2
-        max_y = WINDOW_HEIGHT - self.image.height // 2
+        max_x = GameSettings.WINDOW_WIDTH - self.image.width // 2
+        max_y = GameSettings.WINDOW_HEIGHT - self.image.height // 2
 
         if self.x < min_x:
             self.x = min_x

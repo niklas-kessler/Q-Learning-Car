@@ -10,6 +10,7 @@ def print_boundaries(bound_arr):
                                                             boundary.position,
                                                             boundary.x2, boundary.y2))
 
+
 def mouse_hit_box(x, y, mouse_x, mouse_y):
     """This method checks, if the mouse click approximately hit a point."""
     return math.sqrt((mouse_x - x)**2 + (mouse_y - y)**2) < GameSettings.MOUSE_CLICK_HIT_BOX

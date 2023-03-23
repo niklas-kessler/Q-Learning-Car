@@ -1,8 +1,8 @@
 import pyglet as pg
 
 import racetrack
-import user_controls
 from car import Car
+from user_car import UserCar
 from racetrack import Racetrack
 from game_settings import *
 
@@ -18,10 +18,11 @@ def resize_image(img, width, height):
     img.anchor_y = img.height // 2
 
 
-def load(game_status):
+def load_status(game_status):
     settings.GAME_STATUS = game_status
 
     game_objects.clear()
+    game_objects_to_update.clear()
 
     if handlers_pushed:
         game_window.pop_handlers()
@@ -31,9 +32,9 @@ def load(game_status):
         game_window.push_handlers(racetrack)
 
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
-        game_objects.append([racetrack, user_car])
-        game_window.push_handlers(user_controls.on_key_press(user_car),
-                                  user_controls.on_key_release(user_car))
+        game_objects.extend([racetrack, user_car])
+        game_objects_to_update.extend([user_car])
+        game_window.push_handlers(user_car)
 
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
         game_objects.extend([racetrack])
@@ -42,11 +43,12 @@ def load(game_status):
 pg.resource.path = ['./resources']
 pg.resource.reindex()
 
-settings = GameSettings()
+settings = GameSettings(game_status=GameStatus.USER_CONTROLS)
 game_window = pg.window.Window(height=settings.WINDOW_HEIGHT,
                                width=settings.WINDOW_WIDTH)
 
 game_objects = []
+game_objects_to_update = []
 
 # IMAGES
 racetrack_img = pg.resource.image('racetrack1.png')
@@ -57,16 +59,16 @@ resize_image(car_img, Car.IMG_WIDTH, Car.IMG_HEIGHT)
 
 # SPRITES AND POSITIONING
 racetrack = Racetrack(img=racetrack_img)
-user_car = Car(img=car_img, user_controls=True)
+user_car = UserCar(img=car_img)
 
 
-load(GameStatus.DRAW_BOUNDARIES)
+load_status(settings.GAME_STATUS)
 handlers_pushed = True
 
 
 def update(dt):
-    for obj in game_objects:
-        obj.update
+    for obj in game_objects_to_update:
+        obj.update(dt)
     """
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         print("draw boundaries")
