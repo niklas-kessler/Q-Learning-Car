@@ -43,7 +43,7 @@ def load_status(game_status):
 pg.resource.path = ['./resources']
 pg.resource.reindex()
 
-settings = GameSettings(game_status=GameStatus.USER_CONTROLS)
+settings = GameSettings(game_status=GameStatus.DRAW_BOUNDARIES)
 game_window = pg.window.Window(height=settings.WINDOW_HEIGHT,
                                width=settings.WINDOW_WIDTH)
 
