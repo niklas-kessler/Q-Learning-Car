@@ -15,11 +15,11 @@ class Car(pg.sprite.Sprite):
     FRICTION_DELAY = 0.6
     ROTATION_SPEED = 200.0
 
-    def __init__(self, x_pos=CAR_START_POSITION_X, y_pos=CAR_START_POSITION_Y, *args, **kwargs):
+    def __init__(self, x=CAR_START_POSITION_X, y=CAR_START_POSITION_Y, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.x = x_pos
-        self.y = y_pos
+        self.x = x
+        self.y = y
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
 
@@ -66,3 +66,9 @@ class Car(pg.sprite.Sprite):
         if self.keys['down']:
             if self.velocity > self.MIN_VELOCITY:
                 self.velocity -= self.THRUST * dt
+
+    def reset(self):
+        self.x = self.CAR_START_POSITION_X
+        self.y = self.CAR_START_POSITION_Y
+        self.velocity = 0.0
+        self.rotation = 0

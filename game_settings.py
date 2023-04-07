@@ -2,9 +2,9 @@ from enum import Enum
 
 
 class GameStatus(Enum):
-    DRAW_BOUNDARIES = 1
-    USER_CONTROLS = 2
-    AI_TRAIN = 3
+    DRAW_BOUNDARIES = 0
+    USER_CONTROLS = 1
+    AI_TRAIN = 2
 
 
 class GameSettings:
