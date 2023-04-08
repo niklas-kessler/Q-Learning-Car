@@ -23,6 +23,13 @@ class Car(pg.sprite.Sprite):
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
 
+        self.car_batch = pg.graphics.Batch()
+
+        # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: fl, f, fr, l, r, bl, b, br
+        self.sensors = []
+        self.sensor_val = dict(fl=0.0, f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0)
+        self.init_dist_sensors()
+
     def check_boundaries(self):
         min_x = self.image.width // 2
         min_y = self.image.height // 2
@@ -72,3 +79,15 @@ class Car(pg.sprite.Sprite):
         self.y = self.CAR_START_POSITION_Y
         self.velocity = 0.0
         self.rotation = 0
+
+    def init_dist_sensors(self):
+        # fl
+        start_x = self.x - (self.width / 2)
+        start_y = self.y + (self.height / 2)
+        end_x = start_x - 50
+        end_y = start_y + 50
+        line = pg.shapes.Line(start_x, start_y, end_x, end_y,
+                              batch=self.car_batch,
+                              color=GameSettings.SENSOR_COLOR,
+                              width=GameSettings.LINE_WIDTH)
+        self.sensors.append(line)

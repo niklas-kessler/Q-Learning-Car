@@ -13,6 +13,10 @@ class GameSettings:
     WINDOW_WIDTH = 800
 
     BOUNDARY_COLOR = (180, 180, 0, 255)
+    SENSOR_COLOR = (50, 150, 50, 255)
+
+    LINE_WIDTH = 2
+
     MOUSE_CLICK_HIT_BOX = 15
 
     def __init__(self, game_status=GameStatus.DRAW_BOUNDARIES):
