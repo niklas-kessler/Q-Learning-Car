@@ -16,6 +16,7 @@ class GameSettings:
     SENSOR_COLOR = (50, 150, 50, 255)
 
     LINE_WIDTH = 2
+    SENSOR_LENGTH = 50
 
     MOUSE_CLICK_HIT_BOX = 15
 

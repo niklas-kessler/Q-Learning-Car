@@ -28,7 +28,9 @@ class Car(pg.sprite.Sprite):
         # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: fl, f, fr, l, r, bl, b, br
         self.sensors = []
         self.sensor_val = dict(fl=0.0, f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0)
-        self.init_dist_sensors()
+        self.update_sensors(init=True)
+        self.f, self.fr, self.r, self.br, self.b, self.bl, self.l, self.fl = \
+            None, None, None, None, None, None, None, None
 
     def check_boundaries(self):
         min_x = self.image.width // 2
@@ -74,20 +76,84 @@ class Car(pg.sprite.Sprite):
             if self.velocity > self.MIN_VELOCITY:
                 self.velocity -= self.THRUST * dt
 
+        self.update_sensors()
+
     def reset(self):
         self.x = self.CAR_START_POSITION_X
         self.y = self.CAR_START_POSITION_Y
         self.velocity = 0.0
         self.rotation = 0
 
-    def init_dist_sensors(self):
-        # fl
-        start_x = self.x - (self.width / 2)
-        start_y = self.y + (self.height / 2)
-        end_x = start_x - 50
-        end_y = start_y + 50
-        line = pg.shapes.Line(start_x, start_y, end_x, end_y,
-                              batch=self.car_batch,
-                              color=GameSettings.SENSOR_COLOR,
-                              width=GameSettings.LINE_WIDTH)
-        self.sensors.append(line)
+    def update_sensors(self, init=False):
+
+        w = self.width
+        h = self.height
+        r = math.sqrt(w**2 + h**2) / 2 # length of half diagonal
+        s = GameSettings.SENSOR_LENGTH
+
+        alpha = math.radians(self.rotation)
+        beta = math.atan(w/h)  # angle between vertical (=alpha) and diagonal
+
+        # order: save (x,y,x2,y2)-tupel; clockwise, beginning with f ending with fl
+        # (f_x, f_y, f_x2, f_y2) -> (fr_x, fr_y, fr_x2, fr_y2) -> ... -> (fl_x, fl_y, fl_x2, fl_y2)
+        coords = []
+
+        start_x = self.x + math.sin(alpha) * h/2
+        start_y = self.y + math.cos(alpha) * h/2
+        end_x = start_x + math.sin(alpha) * s
+        end_y = start_y + math.cos(alpha) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha + beta) * r
+        start_y = self.y + math.cos(alpha + beta) * r
+        end_x = start_x + math.sin(alpha + math.radians(45)) * s
+        end_y = start_y + math.cos(alpha + math.radians(45)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha + math.radians(90)) * w/2
+        start_y = self.y + math.cos(alpha + math.radians(90)) * w/2
+        end_x = start_x + math.sin(alpha + math.radians(90)) * s
+        end_y = start_y + math.cos(alpha + math.radians(90)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha + math.radians(180) - beta) * r
+        start_y = self.y + math.cos(alpha + math.radians(180) - beta) * r
+        end_x = start_x + math.sin(alpha + math.radians(135)) * s
+        end_y = start_y + math.cos(alpha + math.radians(135)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha + math.radians(180)) * h/2
+        start_y = self.y + math.cos(alpha + math.radians(180)) * h/2
+        end_x = start_x + math.sin(alpha + math.radians(180)) * s
+        end_y = start_y + math.cos(alpha + math.radians(180)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha + math.radians(180) + beta) * r
+        start_y = self.y + math.cos(alpha + math.radians(180) + beta) * r
+        end_x = start_x + math.sin(alpha + math.radians(225)) * s
+        end_y = start_y + math.cos(alpha + math.radians(225)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha + math.radians(270)) * w / 2
+        start_y = self.y + math.cos(alpha + math.radians(270)) * w / 2
+        end_x = start_x + math.sin(alpha + math.radians(270)) * s
+        end_y = start_y + math.cos(alpha + math.radians(270)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        start_x = self.x + math.sin(alpha - beta) * r
+        start_y = self.y + math.cos(alpha - beta) * r
+        end_x = start_x + math.sin(alpha + math.radians(315)) * s
+        end_y = start_y + math.cos(alpha + math.radians(315)) * s
+        coords.extend([(start_x, start_y, end_x, end_y)])
+
+        if init:
+            for i in range(8):
+                start_x, start_y, end_x, end_y = coords[i]
+                sensor = pg.shapes.Line(start_x, start_y, end_x, end_y,
+                                      batch=self.car_batch,
+                                      color=GameSettings.SENSOR_COLOR,
+                                      width=GameSettings.LINE_WIDTH)
+                self.sensors.append(sensor)
+        else:
+            for i in range(8):
+                self.sensors[i].x, self.sensors[i].y, self.sensors[i].x2, self.sensors[i].y2 = coords[i]
