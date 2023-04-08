@@ -81,13 +81,12 @@ def on_draw():
     for obj in game_objects:
         obj.draw()
     racetrack.racetrack_batch.draw()
-    user_car.car_batch.draw()
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
     else:
         if settings.GAME_STATUS == GameStatus.USER_CONTROLS:
-            pass
+            user_car.car_batch.draw()
         elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
             pass
 
