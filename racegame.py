@@ -55,7 +55,7 @@ def load_gui():
                                          batch=gui_batch))
         dist_value_labels.append(pg.text.Label(text="init", x=ax+30, y=ay-i*15,
                                                font_size=10, batch=gui_batch))
-        intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=2,
+        intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=4,
                                                     batch=gui_batch,
                                                     color=(200, 50, 50, 255)))
 
@@ -125,7 +125,8 @@ def sensor_intersections():
         sensor = user_car.sensors[i]
         i_x_min, i_y_min = sensor.x2, sensor.y2
         for boundary in racetrack.boundaries:
-            i_x, i_y = line_intersection(sensor, boundary)
+            i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
+                                                 [boundary.x2, boundary.y2])
             dist = math.sqrt((i_x - sensor.x)**2 + (i_y - sensor.y)**2)
             dist_to_sensor_end = math.sqrt((i_x - sensor.x2)**2 + (i_y - sensor.y2)**2)
             if dist < closest_dist:

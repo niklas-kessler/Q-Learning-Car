@@ -1,21 +1,34 @@
+def line_intersection(line1_start, line1_end, line2_start, line2_end):
 
-def line_intersection(l1, l2):
-    line1 = [[l1.x, l1.y], [l1.x2, l1.y2]]
-    line2 = [[l2.x, l2.y], [l2.x2, l2.y2]]
-    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+    def orientation(p, q, r):
+        val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
+        if val == 0:
+            return 0
+        elif val > 0:
+            return 1
+        else:
+            return 2
 
-    def det(a, b):
-        return a[0] * b[1] - a[1] * b[0]
+    p1, q1 = line1_start, line1_end
+    p2, q2 = line2_start, line2_end
 
-    div = det(xdiff, ydiff)
-    if div == 0:
-        # lines do not intersect
-        pass
+    o1 = orientation(p1, q1, p2)
+    o2 = orientation(p1, q1, q2)
+    o3 = orientation(p2, q2, p1)
+    o4 = orientation(p2, q2, q1)
 
-    d = (det(*line1), det(*line2))
-    x = det(d, xdiff) / div
-    y = det(d, ydiff) / div
+    if o1 != o2 and o3 != o4:
+        # Lines intersect
+        x1, y1 = p1
+        x2, y2 = q1
+        x3, y3 = p2
+        x4, y4 = q2
 
-    return x, y
+        # Calculate the intersection point
+        x_intersect = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4))
+        y_intersect = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4))
 
+        return x_intersect, y_intersect
+    else:
+        # Lines do not intersect
+        return 0, 0
