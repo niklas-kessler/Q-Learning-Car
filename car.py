@@ -29,8 +29,6 @@ class Car(pg.sprite.Sprite):
         self.sensors = []
         self.sensor_val = dict(fl=0.0, f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0)
         self.update_sensors(init=True)
-        self.f, self.fr, self.r, self.br, self.b, self.bl, self.l, self.fl = \
-            None, None, None, None, None, None, None, None
 
     def check_boundaries(self):
         min_x = self.image.width // 2

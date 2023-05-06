@@ -6,6 +6,7 @@ from car import Car
 from user_car import UserCar
 from racetrack import Racetrack
 from game_settings import *
+from utils import *
 
 
 def resize_image(img, width, height):
@@ -43,6 +44,22 @@ def load_status(game_status):
         game_objects.extend([racetrack])
 
 
+def load_gui():
+    global dist_labels, dist_value_labels
+    ax = settings.WINDOW_WIDTH - 150
+    ay = settings.WINDOW_HEIGHT - 50
+    s = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl']
+
+    for i in range(8):
+        dist_labels.append(pg.text.Label(text=s[i]+': ', x=ax, y=ay-i*15, font_size=10,
+                                         batch=gui_batch))
+        dist_value_labels.append(pg.text.Label(text="init", x=ax+30, y=ay-i*15,
+                                               font_size=10, batch=gui_batch))
+        intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=2,
+                                                    batch=gui_batch,
+                                                    color=(200, 50, 50, 255)))
+
+
 pg.resource.path = ['./resources']
 pg.resource.reindex()
 
@@ -66,6 +83,13 @@ resize_image(car_img, Car.IMG_WIDTH, Car.IMG_HEIGHT)
 racetrack = Racetrack(img=racetrack_img)
 user_car = UserCar(img=car_img)
 
+# gui
+gui_batch = pg.graphics.Batch()
+dist_labels = []
+dist_value_labels = []
+intersection_points = []
+load_gui()
+
 
 @game_window.event
 def on_key_release(symbol, modifiers):
@@ -87,6 +111,7 @@ def on_draw():
     else:
         if settings.GAME_STATUS == GameStatus.USER_CONTROLS:
             user_car.car_batch.draw()
+            gui_batch.draw()
         elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
             pass
 
@@ -94,9 +119,27 @@ def on_draw():
 load_status(settings.GAME_STATUS)
 
 
+def sensor_intersections():
+    for i in range(8):
+        closest_dist = 1000
+        sensor = user_car.sensors[i]
+        i_x_min, i_y_min = sensor.x2, sensor.y2
+        for boundary in racetrack.boundaries:
+            i_x, i_y = line_intersection(sensor, boundary)
+            dist = math.sqrt((i_x - sensor.x)**2 + (i_y - sensor.y)**2)
+            dist_to_sensor_end = math.sqrt((i_x - sensor.x2)**2 + (i_y - sensor.y2)**2)
+            if dist < closest_dist:
+                if dist_to_sensor_end < settings.SENSOR_LENGTH:
+                    i_x_min, i_y_min = i_x, i_y
+                    closest_dist = dist
+        dist_value_labels[i].text = str(round(closest_dist, 1)) if closest_dist < 1000 else "na"
+        intersection_points[i].x, intersection_points[i].y = i_x_min, i_y_min
+
+
 def update(dt):
     for obj in game_objects_to_update:
         obj.update(dt)
+    sensor_intersections()
 
 
 if __name__ == '__main__':

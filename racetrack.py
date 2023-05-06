@@ -64,11 +64,12 @@ class Racetrack(pg.sprite.Sprite):
             else:
                 # draw next boundary
                 print("next boundary")
-                boundary = pg.shapes.Line(self.boundary_curr_start_coord[0],
-                                          self.boundary_curr_start_coord[1], x, y,
-                                          color=GameSettings.BOUNDARY_COLOR,
-                                          width=GameSettings.LINE_WIDTH,
-                                          batch=self.racetrack_batch)
-                self.boundaries.append(boundary)
-                self.boundary_curr_start_coord = (x, y)
+                if x != self.boundary_curr_start_coord[0] or y != self.boundary_curr_start_coord[1]:
+                    boundary = pg.shapes.Line(self.boundary_curr_start_coord[0],
+                                              self.boundary_curr_start_coord[1], x, y,
+                                              color=GameSettings.BOUNDARY_COLOR,
+                                              width=GameSettings.LINE_WIDTH,
+                                              batch=self.racetrack_batch)
+                    self.boundaries.append(boundary)
+                    self.boundary_curr_start_coord = (x, y)
             print_boundaries(self.boundaries)
