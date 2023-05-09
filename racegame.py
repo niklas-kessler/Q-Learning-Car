@@ -119,10 +119,10 @@ def on_draw():
 load_status(settings.GAME_STATUS)
 
 
-def sensor_intersections():
+def sensor_intersections(car: Car):
     for i in range(8):
-        closest_dist = 1000
-        sensor = user_car.sensors[i]
+        closest_dist = math.inf
+        sensor = car.sensors[i]
         i_x_min, i_y_min = sensor.x2, sensor.y2
         for boundary in racetrack.boundaries:
             i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
@@ -133,14 +133,17 @@ def sensor_intersections():
                 if dist_to_sensor_end < settings.SENSOR_LENGTH:
                     i_x_min, i_y_min = i_x, i_y
                     closest_dist = dist
-        dist_value_labels[i].text = str(round(closest_dist, 1)) if closest_dist < 1000 else "na"
-        intersection_points[i].x, intersection_points[i].y = i_x_min, i_y_min
+        if closest_dist < settings.CAR_HIT_BOX:
+            car.game_over()
+        else:
+            dist_value_labels[i].text = str(round(closest_dist, 1))
+            intersection_points[i].x, intersection_points[i].y = i_x_min, i_y_min
 
 
 def update(dt):
     for obj in game_objects_to_update:
         obj.update(dt)
-    sensor_intersections()
+    sensor_intersections(user_car)
 
 
 if __name__ == '__main__':

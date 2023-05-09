@@ -22,3 +22,6 @@ class UserCar(Car):
             self.keys['left'] = False
         elif symbol == key.RIGHT:
             self.keys['right'] = False
+
+    def game_over(self):
+        self.reset()

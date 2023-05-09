@@ -19,6 +19,7 @@ class GameSettings:
     SENSOR_LENGTH = 50
 
     MOUSE_CLICK_HIT_BOX = 15
+    CAR_HIT_BOX = 3
 
     def __init__(self, game_status=GameStatus.DRAW_BOUNDARIES):
         self.GAME_STATUS = game_status
