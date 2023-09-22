@@ -96,7 +96,6 @@ def on_key_release(symbol, modifiers):
     if symbol == key.M:
         next_status = math.fmod(settings.GAME_STATUS.value + 1, 3)
         load_status(GameStatus(next_status))
-        print(settings.GAME_STATUS)
 
 
 @game_window.event

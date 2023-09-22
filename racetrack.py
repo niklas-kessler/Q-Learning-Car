@@ -47,7 +47,7 @@ class Racetrack(pg.sprite.Sprite):
                 self.boundary_curr_start_coord = (x, y)
 
             elif mouse_hit_box(self.boundaries_start_coord[0],
-                               self.boundaries_start_coord[1], x, y ):
+                               self.boundaries_start_coord[1], x, y):
                 # draw last boundary, set end point to first start point
                 print("final boundary")
                 b = pg.shapes.Line(self.boundary_curr_start_coord[0],
@@ -72,4 +72,3 @@ class Racetrack(pg.sprite.Sprite):
                                               batch=self.racetrack_batch)
                     self.boundaries.append(boundary)
                     self.boundary_curr_start_coord = (x, y)
-            print_boundaries(self.boundaries)
