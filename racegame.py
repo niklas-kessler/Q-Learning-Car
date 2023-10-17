@@ -8,6 +8,7 @@ from ai_car import AICar
 from racetrack import Racetrack
 from game_settings import *
 from rlenv import RacegameEnv
+from Network import Network
 from utils import *
 import random
 
@@ -98,6 +99,8 @@ load_gui()
 
 # RL_ENV
 rl_env = RacegameEnv(ai_car, render_mode="human")
+online_net = Network(rl_env)
+target_net = Network(rl_env)
 
 @game_window.event
 def on_key_release(symbol, modifiers):
