@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 
 class Network(nn.Module):
+
     def __init__(self, env):
         super().__init__()
 

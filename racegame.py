@@ -7,6 +7,7 @@ from user_car import UserCar
 from ai_car import AICar
 from racetrack import Racetrack
 from game_settings import *
+from gui import GUI
 from rlenv import RacegameEnv
 from Network import Network
 from utils import *
@@ -49,7 +50,7 @@ def load_status(game_status):
         game_objects.extend([racetrack, ai_car])
         game_objects_to_update.extend([ai_car])
 
-
+"""
 def load_gui():
     global dist_labels, dist_value_labels
     ax = settings.WINDOW_WIDTH - 150
@@ -64,7 +65,7 @@ def load_gui():
         intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=4,
                                                     batch=gui_batch,
                                                     color=(200, 50, 50, 255)))
-
+"""
 
 pg.resource.path = ['./resources']
 pg.resource.reindex()
@@ -91,11 +92,15 @@ user_car = UserCar(img=car_img)
 ai_car = AICar(img=car_img)
 
 # GUI
+"""
 gui_batch = pg.graphics.Batch()
 dist_labels = []
 dist_value_labels = []
 intersection_points = []
 load_gui()
+"""
+gui = GUI()
+gui.load()
 
 # RL_ENV
 rl_env = RacegameEnv(ai_car, render_mode="human")
@@ -121,10 +126,10 @@ def on_draw():
         pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         user_car.car_batch.draw()
-        gui_batch.draw()
+        gui.gui_batch.draw()
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
         ai_car.car_batch.draw()
-        gui_batch.draw()
+        gui.gui_batch.draw()
 
 
 load_status(settings.GAME_STATUS)
@@ -145,11 +150,11 @@ def sensor_intersections(car: Car):
                     i_x_min, i_y_min = i_x, i_y
                     closest_dist = dist
         if closest_dist < settings.CAR_HIT_BOX:
-            car.game_over()
+            car.reset()
         else:
             car.sensor_val[i] = round(closest_dist, 1)
-            dist_value_labels[i].text = str(car.sensor_val[i])
-            intersection_points[i].x, intersection_points[i].y = i_x_min, i_y_min
+            gui.dist_value_labels[i].text = str(car.sensor_val[i])
+            car.intersection_points[i].x, car.intersection_points[i].y = i_x_min, i_y_min
 
 
 def update(dt):

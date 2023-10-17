@@ -18,6 +18,7 @@ class GameSettings:
 
     LINE_WIDTH = 2
     SENSOR_LENGTH = 50
+    INTERSECTION_POINT_SIZE = 4
 
     MOUSE_CLICK_HIT_BOX = 15
     CAR_HIT_BOX = 3

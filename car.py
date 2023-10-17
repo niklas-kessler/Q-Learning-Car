@@ -27,6 +27,7 @@ class Car(pg.sprite.Sprite):
 
         # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: f, fr, r, br, b, bl, l, fl
         self.sensors = []
+        self.intersection_points = []
         self.sensor_val = dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
         self.update_sensors(init=True)
 
@@ -152,6 +153,9 @@ class Car(pg.sprite.Sprite):
                                       color=GameSettings.SENSOR_COLOR,
                                       width=GameSettings.LINE_WIDTH)
                 self.sensors.append(sensor)
+                self.intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=GameSettings.INTERSECTION_POINT_SIZE,
+                                                            batch=self.car_batch,
+                                                            color=(200, 50, 50, 255)))
         else:
             for i in range(8):
                 self.sensors[i].x, self.sensors[i].y, self.sensors[i].x2, self.sensors[i].y2 = coords[i]

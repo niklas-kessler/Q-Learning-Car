@@ -16,14 +16,6 @@ from utils import *
 class RacegameEnv(gym.Env):
     metadata = {"render_modes": ["human"],  "render_fps": GameSettings.RENDER_FPS}
 
-    pg.resource.path = ['./resources']
-    pg.resource.reindex()
-
-    event_stack_size = 0
-
-    game_objects = []
-    game_objects_to_update = []
-
     def __init__(self, ai_car, render_mode=None):
         self.observation_space = spaces.Dict(
             {
@@ -45,9 +37,6 @@ class RacegameEnv(gym.Env):
         assert render_mode is None or render_mode in self.metadata['render_modes']
         self.render_mode = render_mode
 
-        self.settings = GameSettings(game_status=GameStatus.DRAW_BOUNDARIES)
-        self.game_window = None
-
         self.car = ai_car
 
     def _get_obs(self):
@@ -57,9 +46,6 @@ class RacegameEnv(gym.Env):
         return {
             "Reward": self.car.reward
         }
-
-    def reset(self, seed=None, options=None):
-        pass
 
     def step(self, action):
         self.car.action(action)
@@ -77,15 +63,18 @@ class RacegameEnv(gym.Env):
 
         return observation, reward, terminated, False, info
 
-    def render(self):
-         pass
-
     def _render_frame(self):
         pass
     #     if self.game_window is None and self.render_mode == "human":
     #         game_window = pg.window.Window(height=self.settings.WINDOW_HEIGHT,
     #                                        width=self.settings.WINDOW_WIDTH)
 
-    def close(self):
-        pass
+    # def render(self):
+    #      pass
+
+    # def reset(self, seed=None, options=None):
+    #     pass
+
+    # def close(self):
+    #     pass
 
