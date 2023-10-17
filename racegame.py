@@ -4,9 +4,12 @@ import math
 import racetrack
 from car import Car
 from user_car import UserCar
+from ai_car import AICar
 from racetrack import Racetrack
 from game_settings import *
+from rlenv import RacegameEnv
 from utils import *
+import random
 
 
 def resize_image(img, width, height):
@@ -41,7 +44,9 @@ def load_status(game_status):
         event_stack_size += 1
 
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
-        game_objects.extend([racetrack])
+        ai_car.reset()
+        game_objects.extend([racetrack, ai_car])
+        game_objects_to_update.extend([ai_car])
 
 
 def load_gui():
@@ -82,14 +87,17 @@ resize_image(car_img, Car.IMG_WIDTH, Car.IMG_HEIGHT)
 # SPRITES AND POSITIONING
 racetrack = Racetrack(img=racetrack_img)
 user_car = UserCar(img=car_img)
+ai_car = AICar(img=car_img)
 
-# gui
+# GUI
 gui_batch = pg.graphics.Batch()
 dist_labels = []
 dist_value_labels = []
 intersection_points = []
 load_gui()
 
+# RL_ENV
+rl_env = RacegameEnv(ai_car, render_mode="human")
 
 @game_window.event
 def on_key_release(symbol, modifiers):
@@ -101,18 +109,19 @@ def on_key_release(symbol, modifiers):
 @game_window.event
 def on_draw():
     game_window.clear()
+
     for obj in game_objects:
         obj.draw()
     racetrack.racetrack_batch.draw()
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
-    else:
-        if settings.GAME_STATUS == GameStatus.USER_CONTROLS:
-            user_car.car_batch.draw()
-            gui_batch.draw()
-        elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
-            pass
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        user_car.car_batch.draw()
+        gui_batch.draw()
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        ai_car.car_batch.draw()
+        gui_batch.draw()
 
 
 load_status(settings.GAME_STATUS)
@@ -135,16 +144,25 @@ def sensor_intersections(car: Car):
         if closest_dist < settings.CAR_HIT_BOX:
             car.game_over()
         else:
-            dist_value_labels[i].text = str(round(closest_dist, 1))
+            car.sensor_val[i] = round(closest_dist, 1)
+            dist_value_labels[i].text = str(car.sensor_val[i])
             intersection_points[i].x, intersection_points[i].y = i_x_min, i_y_min
 
 
 def update(dt):
     for obj in game_objects_to_update:
         obj.update(dt)
-    sensor_intersections(user_car)
+
+    if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        pass
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        sensor_intersections(user_car)
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        random_action = random.randint(0, 7)
+        rl_env.step(random_action)
+        sensor_intersections(ai_car)
 
 
 if __name__ == '__main__':
-    pg.clock.schedule_interval(update, 1/120.0)
+    pg.clock.schedule_interval(update, 1/settings.RENDER_FPS)
     pg.app.run()

@@ -11,6 +11,7 @@ class GameSettings:
     # const
     WINDOW_HEIGHT = 600
     WINDOW_WIDTH = 800
+    RENDER_FPS = 60
 
     BOUNDARY_COLOR = (180, 180, 0, 255)
     SENSOR_COLOR = (50, 150, 50, 255)

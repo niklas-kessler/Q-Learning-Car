@@ -25,9 +25,9 @@ class Car(pg.sprite.Sprite):
 
         self.car_batch = pg.graphics.Batch()
 
-        # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: fl, f, fr, l, r, bl, b, br
+        # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: f, fr, r, br, b, bl, l, fl
         self.sensors = []
-        self.sensor_val = dict(fl=0.0, f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0)
+        self.sensor_val = dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
         self.update_sensors(init=True)
 
     def check_boundaries(self):
@@ -155,3 +155,12 @@ class Car(pg.sprite.Sprite):
         else:
             for i in range(8):
                 self.sensors[i].x, self.sensors[i].y, self.sensors[i].x2, self.sensors[i].y2 = coords[i]
+
+    def check_collision(self):
+        """1.check boundaries"""
+        return False
+
+    def check_goal(self):
+        """1.check partial goal 2.check goal (time measurement, but keep going)"""
+        return False
+
