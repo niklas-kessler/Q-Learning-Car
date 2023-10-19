@@ -27,45 +27,28 @@ def load_status(game_status):
     settings.GAME_STATUS = game_status
 
     game_objects.clear()
-    game_objects_to_update.clear()
+    game_objects.extend([racetrack, gui])
 
     while event_stack_size > 0:
         game_window.pop_handlers()
         event_stack_size -= 1
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
-        game_objects.extend([racetrack])
         game_window.push_handlers(racetrack)
         event_stack_size += 1
 
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         user_car.reset()
-        game_objects.extend([racetrack, user_car])
-        game_objects_to_update.extend([user_car])
+        game_objects.extend([user_car])
         game_window.push_handlers(user_car)
         event_stack_size += 1
+        gui.load_car(user_car)
 
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
         ai_car.reset()
-        game_objects.extend([racetrack, ai_car])
-        game_objects_to_update.extend([ai_car])
+        game_objects.extend([ai_car])
+        gui.load_car(ai_car)
 
-"""
-def load_gui():
-    global dist_labels, dist_value_labels
-    ax = settings.WINDOW_WIDTH - 150
-    ay = settings.WINDOW_HEIGHT - 50
-    s = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl']
-
-    for i in range(8):
-        dist_labels.append(pg.text.Label(text=s[i]+': ', x=ax, y=ay-i*15, font_size=10,
-                                         batch=gui_batch))
-        dist_value_labels.append(pg.text.Label(text="init", x=ax+30, y=ay-i*15,
-                                               font_size=10, batch=gui_batch))
-        intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=4,
-                                                    batch=gui_batch,
-                                                    color=(200, 50, 50, 255)))
-"""
 
 pg.resource.path = ['./resources']
 pg.resource.reindex()
@@ -88,19 +71,11 @@ resize_image(car_img, Car.IMG_WIDTH, Car.IMG_HEIGHT)
 
 # SPRITES AND POSITIONING
 racetrack = Racetrack(img=racetrack_img)
-user_car = UserCar(img=car_img)
-ai_car = AICar(img=car_img)
+user_car = UserCar(img=car_img, racetrack=racetrack)
+ai_car = AICar(img=car_img, racetrack=racetrack)
 
 # GUI
-"""
-gui_batch = pg.graphics.Batch()
-dist_labels = []
-dist_value_labels = []
-intersection_points = []
-load_gui()
-"""
 gui = GUI()
-gui.load()
 
 # RL_ENV
 rl_env = RacegameEnv(ai_car, render_mode="human")
@@ -119,56 +94,32 @@ def on_draw():
     game_window.clear()
 
     for obj in game_objects:
-        obj.draw()
-    racetrack.racetrack_batch.draw()
+        if hasattr(obj, "draw"):
+            obj.draw()
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
-        user_car.car_batch.draw()
-        gui.gui_batch.draw()
+        pass
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
-        ai_car.car_batch.draw()
-        gui.gui_batch.draw()
+        pass
 
 
 load_status(settings.GAME_STATUS)
 
 
-def sensor_intersections(car: Car):
-    for i in range(8):
-        closest_dist = math.inf
-        sensor = car.sensors[i]
-        i_x_min, i_y_min = sensor.x2, sensor.y2
-        for boundary in racetrack.boundaries:
-            i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
-                                                 [boundary.x2, boundary.y2])
-            dist = math.sqrt((i_x - sensor.x)**2 + (i_y - sensor.y)**2)
-            dist_to_sensor_end = math.sqrt((i_x - sensor.x2)**2 + (i_y - sensor.y2)**2)
-            if dist < closest_dist:
-                if dist_to_sensor_end < settings.SENSOR_LENGTH:
-                    i_x_min, i_y_min = i_x, i_y
-                    closest_dist = dist
-        if closest_dist < settings.CAR_HIT_BOX:
-            car.reset()
-        else:
-            car.sensor_val[i] = round(closest_dist, 1)
-            gui.dist_value_labels[i].text = str(car.sensor_val[i])
-            car.intersection_points[i].x, car.intersection_points[i].y = i_x_min, i_y_min
-
-
 def update(dt):
-    for obj in game_objects_to_update:
-        obj.update(dt)
+    for obj in game_objects:
+        if hasattr(obj, "update_obj"):
+            obj.update_obj(dt)
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
-        sensor_intersections(user_car)
+        pass
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
         random_action = random.randint(0, 7)
         rl_env.step(random_action)
-        sensor_intersections(ai_car)
 
 
 if __name__ == '__main__':

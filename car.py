@@ -1,6 +1,8 @@
 import math
 import pyglet as pg
+from racetrack import Racetrack
 from game_settings import *
+from utils import *
 
 
 class Car(pg.sprite.Sprite):
@@ -15,7 +17,7 @@ class Car(pg.sprite.Sprite):
     FRICTION_DELAY = 0.6
     ROTATION_SPEED = 200.0
 
-    def __init__(self, x=CAR_START_POSITION_X, y=CAR_START_POSITION_Y, *args, **kwargs):
+    def __init__(self, racetrack: Racetrack, x=CAR_START_POSITION_X, y=CAR_START_POSITION_Y,  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.x = x
@@ -23,12 +25,11 @@ class Car(pg.sprite.Sprite):
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
 
-        self.car_batch = pg.graphics.Batch()
-
         # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: f, fr, r, br, b, bl, l, fl
         self.sensors = []
         self.intersection_points = []
-        self.sensor_val = dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
+        self.sensor_val = [0, 0, 0, 0, 0, 0, 0, 0]  # dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
+        self.racetrack = racetrack
         self.update_sensors(init=True)
 
     def check_boundaries(self):
@@ -56,7 +57,7 @@ class Car(pg.sprite.Sprite):
         velocity_y = math.cos(rad) * self.velocity
         return velocity_x, velocity_y
 
-    def update(self, dt):
+    def update_obj(self, dt):
         """This method should be called at least once per frame."""
         # Update position and rotation
         velocity_x, velocity_y = self.calc_velocity(dt)
@@ -76,6 +77,7 @@ class Car(pg.sprite.Sprite):
                 self.velocity -= self.THRUST * dt
 
         self.update_sensors()
+        self.sensor_intersections()
 
     def reset(self):
         self.x = self.CAR_START_POSITION_X
@@ -149,16 +151,36 @@ class Car(pg.sprite.Sprite):
             for i in range(8):
                 start_x, start_y, end_x, end_y = coords[i]
                 sensor = pg.shapes.Line(start_x, start_y, end_x, end_y,
-                                      batch=self.car_batch,
+                                      batch=self.batch,
                                       color=GameSettings.SENSOR_COLOR,
                                       width=GameSettings.LINE_WIDTH)
                 self.sensors.append(sensor)
                 self.intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=GameSettings.INTERSECTION_POINT_SIZE,
-                                                            batch=self.car_batch,
+                                                            batch=self.batch,
                                                             color=(200, 50, 50, 255)))
         else:
             for i in range(8):
                 self.sensors[i].x, self.sensors[i].y, self.sensors[i].x2, self.sensors[i].y2 = coords[i]
+
+    def sensor_intersections(self):
+        for i in range(8):
+            closest_dist = math.inf
+            sensor = self.sensors[i]
+            i_x_min, i_y_min = sensor.x2, sensor.y2
+            for boundary in self.racetrack.boundaries:
+                i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
+                                             [boundary.x2, boundary.y2])
+                dist = math.sqrt((i_x - sensor.x) ** 2 + (i_y - sensor.y) ** 2)
+                dist_to_sensor_end = math.sqrt((i_x - sensor.x2) ** 2 + (i_y - sensor.y2) ** 2)
+                if dist < closest_dist:
+                    if dist_to_sensor_end < GameSettings.SENSOR_LENGTH:
+                        i_x_min, i_y_min = i_x, i_y
+                        closest_dist = dist
+            if closest_dist < GameSettings.CAR_HIT_BOX:
+                self.reset()
+            else:
+                self.sensor_val[i] = round(closest_dist, 1)
+                self.intersection_points[i].x, self.intersection_points[i].y = i_x_min, i_y_min
 
     def check_collision(self):
         """1.check boundaries"""
@@ -167,4 +189,7 @@ class Car(pg.sprite.Sprite):
     def check_goal(self):
         """1.check partial goal 2.check goal (time measurement, but keep going)"""
         return False
+
+    def draw(self):
+        self.batch.draw()
 

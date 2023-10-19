@@ -23,13 +23,11 @@ class Racetrack(pg.sprite.Sprite):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.x = GameSettings.WINDOW_WIDTH // 2
         self.y = GameSettings.WINDOW_HEIGHT // 2
         self.boundaries = []
         self.boundaries_start_coord = None
         self.boundary_curr_start_coord = None
-        self.racetrack_batch = pg.graphics.Batch()
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == mouse.RIGHT:
@@ -56,7 +54,7 @@ class Racetrack(pg.sprite.Sprite):
                                    self.boundaries_start_coord[1],
                                    color=GameSettings.BOUNDARY_COLOR,
                                    width=GameSettings.LINE_WIDTH,
-                                   batch=self.racetrack_batch)
+                                   batch=self.batch)
                 self.boundaries.append(b)
                 self.boundaries_start_coord = None
                 self.boundary_curr_start_coord = None
@@ -69,6 +67,9 @@ class Racetrack(pg.sprite.Sprite):
                                               self.boundary_curr_start_coord[1], x, y,
                                               color=GameSettings.BOUNDARY_COLOR,
                                               width=GameSettings.LINE_WIDTH,
-                                              batch=self.racetrack_batch)
+                                              batch=self.batch)
                     self.boundaries.append(boundary)
                     self.boundary_curr_start_coord = (x, y)
+
+    def draw(self):
+        self.batch.draw()
