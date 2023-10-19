@@ -29,12 +29,12 @@ def load_status(game_status):
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
-
+    if settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         user_car.reset()
         game_objects.extend([user_car])
         gui.load_car(user_car)
-
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
         ai_car.reset()
         game_objects.extend([ai_car])
@@ -75,7 +75,9 @@ target_net = Network(rl_env)
 @game_window.event
 def on_mouse_press(x, y, button, modifiers):
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
-        racetrack.create_boundary(x, y, button, modifiers)
+        racetrack.create_boundary(x, y, button)
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        racetrack.create_goal(x, y, button)
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         pass
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
@@ -86,6 +88,8 @@ def on_mouse_press(x, y, button, modifiers):
 def on_key_press(symbol, modifiers):
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         user_car.key_press(symbol, modifiers)
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
@@ -95,10 +99,12 @@ def on_key_press(symbol, modifiers):
 @game_window.event
 def on_key_release(symbol, modifiers):
     if symbol == key.M:
-        next_status = math.fmod(settings.GAME_STATUS.value + 1, 3)
+        next_status = math.fmod(settings.GAME_STATUS.value + 1, 4)
         load_status(GameStatus(next_status))
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
         pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         user_car.key_release(symbol, modifiers)
@@ -116,6 +122,8 @@ def on_draw():
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         pass
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
@@ -131,6 +139,8 @@ def update(dt):
             obj.update_obj(dt)
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
         pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         pass

@@ -32,7 +32,7 @@ class Racetrack(pg.sprite.Sprite):
         self.goal_start_coord = None
         self.batch = pg.graphics.Batch()
 
-    def create_boundary(self, x, y, button, modifiers):
+    def create_boundary(self, x, y, button):
         if button == mouse.RIGHT:
             # remove last boundary
             print("remove last boundary")
@@ -73,6 +73,9 @@ class Racetrack(pg.sprite.Sprite):
                                               batch=self.batch)
                     self.boundaries.append(boundary)
                     self.boundary_curr_start_coord = (x, y)
+
+    def create_goal(self, x, y, button):
+        print("test")
 
     def draw(self):
         super().draw()
