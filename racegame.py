@@ -82,6 +82,7 @@ rl_env = RacegameEnv(ai_car, render_mode="human")
 online_net = Network(rl_env)
 target_net = Network(rl_env)
 
+
 @game_window.event
 def on_key_release(symbol, modifiers):
     if symbol == key.M:

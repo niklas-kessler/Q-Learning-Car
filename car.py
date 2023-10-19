@@ -24,6 +24,7 @@ class Car(pg.sprite.Sprite):
         self.y = y
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
+        self.batch = pg.graphics.Batch()
 
         # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: f, fr, r, br, b, bl, l, fl
         self.sensors = []
@@ -191,5 +192,5 @@ class Car(pg.sprite.Sprite):
         return False
 
     def draw(self):
+        super().draw()
         self.batch.draw()
-

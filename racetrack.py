@@ -28,6 +28,7 @@ class Racetrack(pg.sprite.Sprite):
         self.boundaries = []
         self.boundaries_start_coord = None
         self.boundary_curr_start_coord = None
+        self.batch = pg.graphics.Batch()
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == mouse.RIGHT:
@@ -72,4 +73,5 @@ class Racetrack(pg.sprite.Sprite):
                     self.boundary_curr_start_coord = (x, y)
 
     def draw(self):
+        super().draw()
         self.batch.draw()
