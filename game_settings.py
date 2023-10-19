@@ -16,6 +16,7 @@ class GameSettings:
 
     BOUNDARY_COLOR = (180, 180, 0, 255)
     SENSOR_COLOR = (50, 150, 50, 255)
+    GOAL_COLOR = (0, 0, 180, 255)
 
     LINE_WIDTH = 2
     SENSOR_LENGTH = 50
