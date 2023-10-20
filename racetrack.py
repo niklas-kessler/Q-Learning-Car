@@ -81,6 +81,7 @@ class Racetrack(pg.sprite.Sprite):
             if self.goal_start_coord is None and self.goals:
                 print("remove last goal")
                 self.goals.pop()
+                self.n_goals -= 1
             else:
                 print("remove start point")
                 self.goal_start_coord = None

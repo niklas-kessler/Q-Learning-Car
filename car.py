@@ -195,8 +195,8 @@ class Car(pg.sprite.Sprite):
                 self.i_rounds = self.i_goals // self.racetrack.n_goals
                 print(f"Round {self.i_rounds}. Achieved {self.i_goals} / {self.racetrack.n_goals} goals.")
             next_goal = self.racetrack.goals[self.i_goals % self.racetrack.n_goals]
-            self.distance_next_goal = point_to_line_distance([next_goal.x, next_goal.y], [next_goal.x2, next_goal.y2],
-                                                             [self.x, self.y])
+            self.distance_next_goal = round(point_to_line_distance([next_goal.x, next_goal.y], [next_goal.x2, next_goal.y2],
+                                                             [self.x, self.y]),1)
 
 
     def check_collision(self):
