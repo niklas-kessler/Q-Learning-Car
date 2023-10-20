@@ -7,15 +7,27 @@ class GameStatus(Enum):
     USER_CONTROLS = 2
     AI_TRAIN = 3
 
+    def __str__(self):
+        if self == GameStatus.DRAW_BOUNDARIES:
+            return "Drawing Boundaries"
+        elif self == GameStatus.DRAW_GOALS:
+            return "Drawing Goals"
+        elif self == GameStatus.USER_CONTROLS:
+            return "User Controls"
+        elif self == GameStatus.AI_TRAIN:
+            return "AI Training"
+
 
 class GameSettings:
     # const
     WINDOW_HEIGHT = 600
-    WINDOW_WIDTH = 800
+    WINDOW_WIDTH = 1000
     RENDER_FPS = 60
 
     FONT_SIZE = 10
 
+    GAME_STATUS_LABEL_X = 20
+    GAME_STATUS_LABEL_Y = 35
     DIST_LABELS_POSITION_X = WINDOW_WIDTH - 80
     DIST_LABELS_POSITION_Y = WINDOW_HEIGHT - 50
     GOAL_LABEL_POSITION_X = 20

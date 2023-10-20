@@ -63,7 +63,7 @@ user_car = UserCar(img=car_img, racetrack=racetrack)
 ai_car = AICar(img=car_img, racetrack=racetrack)
 
 # GUI
-gui = GUI()
+gui = GUI(settings)
 
 # RL Environment
 rl_env = RacegameEnv(ai_car, render_mode="human")

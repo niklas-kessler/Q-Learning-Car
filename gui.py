@@ -4,10 +4,21 @@ from game_settings import GameSettings
 
 
 class GUI:
-    def __init__(self):
+    def __init__(self, settings: GameSettings):
         self.car = None
+        self.settings = settings
         self.gui_batch = pg.graphics.Batch()
 
+        self.game_status_label = pg.text.Label(text="Game status: ",
+                                               x=GameSettings.GAME_STATUS_LABEL_X,
+                                               y=GameSettings.GAME_STATUS_LABEL_Y,
+                                               font_size=GameSettings.FONT_SIZE,
+                                               batch=self.gui_batch)
+        self.game_status_value_label = pg.text.Label(text="init",
+                                               x=GameSettings.GAME_STATUS_LABEL_X + 90,
+                                               y=GameSettings.GAME_STATUS_LABEL_Y,
+                                               font_size=GameSettings.FONT_SIZE,
+                                               batch=self.gui_batch)
         self.dist_labels = []
         self.dist_value_labels = []
         s = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl']
@@ -48,6 +59,8 @@ class GUI:
         self.car = car
 
     def update_obj(self, dt):
+        if self.settings is not None:
+            self.game_status_value_label.text = str(self.settings.GAME_STATUS)
         if self.car is not None:
             for i in range(8):
                 self.dist_value_labels[i].text = str(self.car.sensor_val[i])
