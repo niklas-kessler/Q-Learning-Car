@@ -30,6 +30,7 @@ class Racetrack(pg.sprite.Sprite):
         self.boundary_curr_start_coord = None
         self.goals = []
         self.goal_start_coord = None
+        self.n_goals = 0
         self.boundary_batch = pg.graphics.Batch()
         self.goal_batch = pg.graphics.Batch()
 
@@ -95,6 +96,7 @@ class Racetrack(pg.sprite.Sprite):
                                    width=GameSettings.LINE_WIDTH,
                                    batch=self.goal_batch)
                 self.goals.append(g)
+                self.n_goals += 1
                 self.goal_start_coord = None
 
     def draw(self):

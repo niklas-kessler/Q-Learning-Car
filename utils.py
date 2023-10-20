@@ -1,5 +1,8 @@
-def line_intersection(line1_start, line1_end, line2_start, line2_end):
+import numpy as np
+import math
 
+
+def line_intersection(line1_start, line1_end, line2_start, line2_end):
     def orientation(p, q, r):
         val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
         if val == 0:
@@ -32,3 +35,27 @@ def line_intersection(line1_start, line1_end, line2_start, line2_end):
     else:
         # Lines do not intersect
         return 0, 0
+
+
+def point_to_line_distance(v, w, p):
+    """
+    This function takes startpoint v and endpoint w of a line-segment and point p and returns the distance between point
+    and line. Translated to python from
+    https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment.
+    """
+    v = np.asarray(v)
+    w = np.asarray(w)
+    p = np.asarray(p)
+
+    l = np.dot(w - v, w - v)  # squared_length of the line
+
+    if l == 0:  # case v == w
+        return np.linalg.norm(p - v)
+
+    t = max(0, min(1, np.dot(p-v, w-v) / l))  # clip t between 0 and 1 to handle points outside the segment vw.
+    projection = v + t * (w-v)
+
+    return np.linalg.norm(p-projection)
+
+
+

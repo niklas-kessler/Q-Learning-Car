@@ -30,6 +30,9 @@ class Car(pg.sprite.Sprite):
         self.sensors = []
         self.intersection_points = []
         self.sensor_val = [0, 0, 0, 0, 0, 0, 0, 0]  # dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
+        self.i_goals = 0
+        self.i_rounds = 0
+        self.distance_next_goal = math.inf
         self.racetrack = racetrack
         self.update_sensors(init=True)
 
@@ -168,6 +171,8 @@ class Car(pg.sprite.Sprite):
             closest_dist = math.inf
             sensor = self.sensors[i]
             i_x_min, i_y_min = sensor.x2, sensor.y2
+
+            # Boundaries
             for boundary in self.racetrack.boundaries:
                 i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
                                              [boundary.x2, boundary.y2])
@@ -182,6 +187,17 @@ class Car(pg.sprite.Sprite):
             else:
                 self.sensor_val[i] = round(closest_dist, 1)
                 self.intersection_points[i].x, self.intersection_points[i].y = i_x_min, i_y_min
+
+        # Goals
+        if self.racetrack.goals:
+            if self.distance_next_goal < GameSettings.CAR_HIT_BOX:
+                self.i_goals += 1
+                self.i_rounds = self.i_goals // self.racetrack.n_goals
+                print(f"Round {self.i_rounds}. Achieved {self.i_goals} / {self.racetrack.n_goals} goals.")
+            next_goal = self.racetrack.goals[self.i_goals % self.racetrack.n_goals]
+            self.distance_next_goal = point_to_line_distance([next_goal.x, next_goal.y], [next_goal.x2, next_goal.y2],
+                                                             [self.x, self.y])
+
 
     def check_collision(self):
         """1.check boundaries"""
