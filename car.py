@@ -29,7 +29,7 @@ class Car(pg.sprite.Sprite):
         # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: f, fr, r, br, b, bl, l, fl
         self.sensors = []
         self.intersection_points = []
-        self.sensor_val = [0, 0, 0, 0, 0, 0, 0, 0]  # dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
+        self.sensor_val = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
         self.collision = False
         self.i_goals = 0
         self.goal = False
@@ -91,6 +91,7 @@ class Car(pg.sprite.Sprite):
         self.y = self.CAR_START_POSITION_Y
         self.velocity = 0.0
         self.rotation = 0
+        self.i_goals = 0
 
     def update_sensors(self, init=False):
 
@@ -187,7 +188,6 @@ class Car(pg.sprite.Sprite):
                         i_x_min, i_y_min = i_x, i_y
                         closest_dist = dist
             if closest_dist < GameSettings.CAR_HIT_BOX:
-                self.reset()
                 return True
             else:
                 self.sensor_val[i] = round(closest_dist, 1)
@@ -201,7 +201,7 @@ class Car(pg.sprite.Sprite):
             if self.distance_next_goal < GameSettings.CAR_HIT_BOX:
                 self.i_goals += 1
                 self.i_rounds = self.i_goals // self.racetrack.n_goals
-                print(f"Round {self.i_rounds}. Achieved {self.i_goals} / {self.racetrack.n_goals} goals.")
+                # print(f"Round {self.i_rounds}. Achieved {self.i_goals} / {self.racetrack.n_goals} goals.")
                 result_boolean = True
             next_goal = self.racetrack.goals[self.i_goals % self.racetrack.n_goals]
             self.distance_next_goal = round(

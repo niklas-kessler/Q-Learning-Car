@@ -1,28 +1,21 @@
 import gymnasium as gym
 from gymnasium import spaces
-import numpy as np
 
-import pyglet as pg
-from pyglet.window import key
-import math
-import racetrack
-from car import Car
-from user_car import UserCar
-from racetrack import Racetrack
 from game_settings import *
-from utils import *
+
+
+GAMMA = 0.99  # discount rate traget learning
+BATCH_SIZE = 32  # how many transistions to sample from buffer
+BUFFER_SIZE = 50000  # how many to store before overwriting all transitions
+MIN_REPLAY_SIZE = 1000
+EPSILON_START = 1.0
+EPSILON_END = 0.02
+EPSILON_DECAY = 10000
+TARGET_UPDATE_FREQ = 1000
 
 
 class RacegameEnv(gym.Env):
     metadata = {"render_modes": ["human"],  "render_fps": GameSettings.RENDER_FPS}
-
-    GAMMA = 0.99  # discount rate traget learning
-    BATCH_SIZE = 32  # how many transistions to sample from buffer
-    BUFFER_SIZE = 50000  # how many to store before overwriting all transitions
-    MIN_REPLAY_SIZE = 1000
-    EPSILON_START = 1.0
-    EPSILON_END = 0.02
-    EPSILON_DECAY = 10000
 
     def __init__(self, ai_car, render_mode=None):
         self.observation_space = spaces.Dict(
@@ -48,6 +41,16 @@ class RacegameEnv(gym.Env):
         self.car = ai_car
 
     def _get_obs(self):
+        """
+        return {'f': self.car.sensor_val[0],
+                'fr': self.car.sensor_val[1],
+                'l': self.car.sensor_val[2],
+                'r': self.car.sensor_val[3],
+                'bl': self.car.sensor_val[4],
+                'b': self.car.sensor_val[5],
+                'br': self.car.sensor_val[6],
+                'fl': self.car.sensor_val[7]}
+        """
         return self.car.sensor_val
 
     def _get_info(self):
@@ -61,7 +64,12 @@ class RacegameEnv(gym.Env):
         # TODO
         terminated = self.car.collision
         goal = self.car.goal
-        reward = 1 if goal else 0
+        if terminated:
+            reward = -5
+        elif goal:
+            reward = 1
+        else:
+            reward = 0
 
         observation = self._get_obs()
         info = self._get_info()
@@ -69,7 +77,7 @@ class RacegameEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, reward, terminated, False, info
+        return observation, reward, terminated, info
 
     def _render_frame(self):
         pass
@@ -80,8 +88,9 @@ class RacegameEnv(gym.Env):
     # def render(self):
     #      pass
 
-    # def reset(self, seed=None, options=None):
-    #     pass
+    def reset(self, seed=None, options=None):
+        self.car.reset()
+        return self._get_obs(), self._get_info()
 
     # def close(self):
     #     pass
