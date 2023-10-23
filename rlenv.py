@@ -16,6 +16,14 @@ from utils import *
 class RacegameEnv(gym.Env):
     metadata = {"render_modes": ["human"],  "render_fps": GameSettings.RENDER_FPS}
 
+    GAMMA = 0.99  # discount rate traget learning
+    BATCH_SIZE = 32  # how many transistions to sample from buffer
+    BUFFER_SIZE = 50000  # how many to store before overwriting all transitions
+    MIN_REPLAY_SIZE = 1000
+    EPSILON_START = 1.0
+    EPSILON_END = 0.02
+    EPSILON_DECAY = 10000
+
     def __init__(self, ai_car, render_mode=None):
         self.observation_space = spaces.Dict(
             {
@@ -51,8 +59,8 @@ class RacegameEnv(gym.Env):
         self.car.action(action)
 
         # TODO
-        terminated = self.car.check_collision()
-        goal = self.car.check_goal()
+        terminated = self.car.collision
+        goal = self.car.goal
         reward = 1 if goal else 0
 
         observation = self._get_obs()
@@ -77,4 +85,3 @@ class RacegameEnv(gym.Env):
 
     # def close(self):
     #     pass
-

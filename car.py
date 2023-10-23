@@ -7,7 +7,7 @@ from utils import *
 
 class Car(pg.sprite.Sprite):
 
-    CAR_START_POSITION_X = 165
+    CAR_START_POSITION_X = 265
     CAR_START_POSITION_Y = 320
     IMG_WIDTH = 12
     IMG_HEIGHT = 24
@@ -30,7 +30,9 @@ class Car(pg.sprite.Sprite):
         self.sensors = []
         self.intersection_points = []
         self.sensor_val = [0, 0, 0, 0, 0, 0, 0, 0]  # dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
+        self.collision = False
         self.i_goals = 0
+        self.goal = False
         self.i_rounds = 0
         self.distance_next_goal = math.inf
         self.racetrack = racetrack
@@ -81,7 +83,8 @@ class Car(pg.sprite.Sprite):
                 self.velocity -= self.THRUST * dt
 
         self.update_sensors()
-        self.sensor_intersections()
+        self.collision = self.check_collision()
+        self.goal = self.check_goal()
 
     def reset(self):
         self.x = self.CAR_START_POSITION_X
@@ -166,7 +169,8 @@ class Car(pg.sprite.Sprite):
             for i in range(8):
                 self.sensors[i].x, self.sensors[i].y, self.sensors[i].x2, self.sensors[i].y2 = coords[i]
 
-    def sensor_intersections(self):
+    def check_collision(self):
+        """This method calculates the distances to the racetrack-boundaries and checks for collision"""
         for i in range(8):
             closest_dist = math.inf
             sensor = self.sensors[i]
@@ -184,28 +188,26 @@ class Car(pg.sprite.Sprite):
                         closest_dist = dist
             if closest_dist < GameSettings.CAR_HIT_BOX:
                 self.reset()
+                return True
             else:
                 self.sensor_val[i] = round(closest_dist, 1)
                 self.intersection_points[i].x, self.intersection_points[i].y = i_x_min, i_y_min
+        return False
 
-        # Goals
+    def check_goal(self):
+        """This method calculates the distance to the next goal and checks for passing it"""
+        result_boolean = False
         if self.racetrack.goals:
             if self.distance_next_goal < GameSettings.CAR_HIT_BOX:
                 self.i_goals += 1
                 self.i_rounds = self.i_goals // self.racetrack.n_goals
                 print(f"Round {self.i_rounds}. Achieved {self.i_goals} / {self.racetrack.n_goals} goals.")
+                result_boolean = True
             next_goal = self.racetrack.goals[self.i_goals % self.racetrack.n_goals]
-            self.distance_next_goal = round(point_to_line_distance([next_goal.x, next_goal.y], [next_goal.x2, next_goal.y2],
-                                                             [self.x, self.y]),1)
-
-
-    def check_collision(self):
-        """1.check boundaries"""
-        return False
-
-    def check_goal(self):
-        """1.check partial goal 2.check goal (time measurement, but keep going)"""
-        return False
+            self.distance_next_goal = round(
+                point_to_line_distance([next_goal.x, next_goal.y], [next_goal.x2, next_goal.y2],
+                                       [self.x, self.y]), 1)
+        return result_boolean
 
     def draw(self):
         super().draw()
