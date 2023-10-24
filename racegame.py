@@ -194,7 +194,7 @@ def rl_train():
         episode_reward = 0.0
 
     if len(rew_buffer) >= 100:
-        if np.mean(rew_buffer) >= 195:
+        if np.mean(rew_buffer) >= 10:
             rl_env.reset()
             action = online_net.act(obs)
             obs, _, done, *_ = rl_env.step(action)
@@ -239,7 +239,9 @@ def rl_train():
     if step % 500 == 0:
         print()
         print('Step', step)
-        print('Avg Rew', np.mean(rew_buffer))
+        print('Avg Rew', np.mean(rew_buffer), ', Epsilon', epsilon)
+
+        print()
 
     step += 1
 

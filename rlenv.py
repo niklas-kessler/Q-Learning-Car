@@ -7,10 +7,10 @@ from game_settings import *
 GAMMA = 0.99  # discount rate traget learning
 BATCH_SIZE = 32  # how many transistions to sample from buffer
 BUFFER_SIZE = 50000  # how many to store before overwriting all transitions
-MIN_REPLAY_SIZE = 1000
+MIN_REPLAY_SIZE = 3000
 EPSILON_START = 1.0
 EPSILON_END = 0.02
-EPSILON_DECAY = 10000
+EPSILON_DECAY = 20000
 TARGET_UPDATE_FREQ = 1000
 
 
@@ -65,7 +65,7 @@ class RacegameEnv(gym.Env):
         terminated = self.car.collision
         goal = self.car.goal
         if terminated:
-            reward = -5
+            reward = -15
         elif goal:
             reward = 1
         else:
