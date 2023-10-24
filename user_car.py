@@ -3,7 +3,7 @@ from pyglet.window import key
 
 
 class UserCar(Car):
-    def on_key_press(self, symbol, modifiers):
+    def key_press(self, symbol, modifiers):
         if symbol == key.UP:
             self.keys['up'] = True
         elif symbol == key.DOWN:
@@ -13,7 +13,7 @@ class UserCar(Car):
         elif symbol == key.RIGHT:
             self.keys['right'] = True
 
-    def on_key_release(self, symbol, modifiers):
+    def key_release(self, symbol, modifiers):
         if symbol == key.UP:
             self.keys['up'] = False
         elif symbol == key.DOWN:
@@ -22,6 +22,3 @@ class UserCar(Car):
             self.keys['left'] = False
         elif symbol == key.RIGHT:
             self.keys['right'] = False
-
-    def game_over(self):
-        self.reset()

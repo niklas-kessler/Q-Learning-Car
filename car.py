@@ -1,11 +1,13 @@
 import math
 import pyglet as pg
+from racetrack import Racetrack
 from game_settings import *
+from utils import *
 
 
 class Car(pg.sprite.Sprite):
 
-    CAR_START_POSITION_X = 165
+    CAR_START_POSITION_X = 265
     CAR_START_POSITION_Y = 320
     IMG_WIDTH = 12
     IMG_HEIGHT = 24
@@ -15,19 +17,25 @@ class Car(pg.sprite.Sprite):
     FRICTION_DELAY = 0.6
     ROTATION_SPEED = 200.0
 
-    def __init__(self, x=CAR_START_POSITION_X, y=CAR_START_POSITION_Y, *args, **kwargs):
+    def __init__(self, racetrack: Racetrack, x=CAR_START_POSITION_X, y=CAR_START_POSITION_Y,  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.x = x
         self.y = y
         self.velocity = 0.0
         self.keys = dict(left=False, right=False, up=False, down=False)
+        self.batch = pg.graphics.Batch()
 
-        self.car_batch = pg.graphics.Batch()
-
-        # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: fl, f, fr, l, r, bl, b, br
+        # "l" ~ left, "f" ~ front, "r" ~ right, "b" ~ back;   order: f, fr, r, br, b, bl, l, fl
         self.sensors = []
-        self.sensor_val = dict(fl=0.0, f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0)
+        self.intersection_points = []
+        self.sensor_val = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # dict(f=0.0, fr=0.0, l=0.0, r=0.0, bl=0.0, b=0.0, br=0.0, fl=0.0,)
+        self.collision = False
+        self.i_goals = 0
+        self.goal = False
+        self.i_rounds = 0
+        self.distance_next_goal = math.inf
+        self.racetrack = racetrack
         self.update_sensors(init=True)
 
     def check_boundaries(self):
@@ -55,7 +63,7 @@ class Car(pg.sprite.Sprite):
         velocity_y = math.cos(rad) * self.velocity
         return velocity_x, velocity_y
 
-    def update(self, dt):
+    def update_obj(self, dt):
         """This method should be called at least once per frame."""
         # Update position and rotation
         velocity_x, velocity_y = self.calc_velocity(dt)
@@ -75,12 +83,15 @@ class Car(pg.sprite.Sprite):
                 self.velocity -= self.THRUST * dt
 
         self.update_sensors()
+        self.collision = self.check_collision()
+        self.goal = self.check_goal()
 
     def reset(self):
         self.x = self.CAR_START_POSITION_X
         self.y = self.CAR_START_POSITION_Y
         self.velocity = 0.0
         self.rotation = 0
+        self.i_goals = 0
 
     def update_sensors(self, init=False):
 
@@ -148,10 +159,56 @@ class Car(pg.sprite.Sprite):
             for i in range(8):
                 start_x, start_y, end_x, end_y = coords[i]
                 sensor = pg.shapes.Line(start_x, start_y, end_x, end_y,
-                                      batch=self.car_batch,
+                                      batch=self.batch,
                                       color=GameSettings.SENSOR_COLOR,
                                       width=GameSettings.LINE_WIDTH)
                 self.sensors.append(sensor)
+                self.intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=GameSettings.INTERSECTION_POINT_SIZE,
+                                                            batch=self.batch,
+                                                            color=(200, 50, 50, 255)))
         else:
             for i in range(8):
                 self.sensors[i].x, self.sensors[i].y, self.sensors[i].x2, self.sensors[i].y2 = coords[i]
+
+    def check_collision(self):
+        """This method calculates the distances to the racetrack-boundaries and checks for collision"""
+        for i in range(8):
+            closest_dist = math.inf
+            sensor = self.sensors[i]
+            i_x_min, i_y_min = sensor.x2, sensor.y2
+
+            # Boundaries
+            for boundary in self.racetrack.boundaries:
+                i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
+                                             [boundary.x2, boundary.y2])
+                dist = math.sqrt((i_x - sensor.x) ** 2 + (i_y - sensor.y) ** 2)
+                dist_to_sensor_end = math.sqrt((i_x - sensor.x2) ** 2 + (i_y - sensor.y2) ** 2)
+                if dist < closest_dist:
+                    if dist_to_sensor_end < GameSettings.SENSOR_LENGTH:
+                        i_x_min, i_y_min = i_x, i_y
+                        closest_dist = dist
+            if closest_dist < GameSettings.CAR_HIT_BOX:
+                return True
+            else:
+                self.sensor_val[i] = round(closest_dist, 1)
+                self.intersection_points[i].x, self.intersection_points[i].y = i_x_min, i_y_min
+        return False
+
+    def check_goal(self):
+        """This method calculates the distance to the next goal and checks for passing it"""
+        result_boolean = False
+        if self.racetrack.goals:
+            if self.distance_next_goal < GameSettings.CAR_HIT_BOX:
+                self.i_goals += 1
+                self.i_rounds = self.i_goals // self.racetrack.n_goals
+                # print(f"Round {self.i_rounds}. Achieved {self.i_goals} / {self.racetrack.n_goals} goals.")
+                result_boolean = True
+            next_goal = self.racetrack.goals[self.i_goals % self.racetrack.n_goals]
+            self.distance_next_goal = round(
+                point_to_line_distance([next_goal.x, next_goal.y], [next_goal.x2, next_goal.y2],
+                                       [self.x, self.y]), 1)
+        return result_boolean
+
+    def draw(self):
+        super().draw()
+        self.batch.draw()

@@ -4,9 +4,19 @@ import math
 import racetrack
 from car import Car
 from user_car import UserCar
+from ai_car import AICar
 from racetrack import Racetrack
 from game_settings import *
+from gui import GUI
+from rlenv import *
+from Network import Network
 from utils import *
+from collections import deque
+import itertools
+import numpy as np
+import random
+from torch import nn
+import torch
 
 
 def resize_image(img, width, height):
@@ -17,47 +27,24 @@ def resize_image(img, width, height):
 
 
 def load_status(game_status):
-    global event_stack_size
-
     settings.GAME_STATUS = game_status
 
     game_objects.clear()
-    game_objects_to_update.clear()
-
-    while event_stack_size > 0:
-        game_window.pop_handlers()
-        event_stack_size -= 1
+    game_objects.extend([racetrack, gui])
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
-        game_objects.extend([racetrack])
-        game_window.push_handlers(racetrack)
-        event_stack_size += 1
-
+        pass
+    if settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         user_car.reset()
-        game_objects.extend([racetrack, user_car])
-        game_objects_to_update.extend([user_car])
-        game_window.push_handlers(user_car)
-        event_stack_size += 1
-
+        game_objects.extend([user_car])
+        gui.load_car(user_car)
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
-        game_objects.extend([racetrack])
-
-
-def load_gui():
-    global dist_labels, dist_value_labels
-    ax = settings.WINDOW_WIDTH - 150
-    ay = settings.WINDOW_HEIGHT - 50
-    s = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl']
-
-    for i in range(8):
-        dist_labels.append(pg.text.Label(text=s[i]+': ', x=ax, y=ay-i*15, font_size=10,
-                                         batch=gui_batch))
-        dist_value_labels.append(pg.text.Label(text="init", x=ax+30, y=ay-i*15,
-                                               font_size=10, batch=gui_batch))
-        intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=4,
-                                                    batch=gui_batch,
-                                                    color=(200, 50, 50, 255)))
+        global draw
+        draw = False
+        game_objects.extend([ai_car])
+        gui.load_car(ai_car)
 
 
 pg.resource.path = ['./resources']
@@ -66,85 +53,222 @@ pg.resource.reindex()
 settings = GameSettings(game_status=GameStatus.DRAW_BOUNDARIES)
 game_window = pg.window.Window(height=settings.WINDOW_HEIGHT,
                                width=settings.WINDOW_WIDTH)
-
-event_stack_size = 0
+draw = True
 
 game_objects = []
 game_objects_to_update = []
 
-# IMAGES
+# Racetrack
 racetrack_img = pg.resource.image('racetrack1.png')
 resize_image(racetrack_img, Racetrack.IMG_WIDTH, Racetrack.IMG_HEIGHT)
+racetrack = Racetrack(img=racetrack_img)
 
+# UserCar and AICar
 car_img = pg.resource.image('car.png')
 resize_image(car_img, Car.IMG_WIDTH, Car.IMG_HEIGHT)
+user_car = UserCar(img=car_img, racetrack=racetrack)
+ai_car = AICar(img=car_img, racetrack=racetrack)
 
-# SPRITES AND POSITIONING
-racetrack = Racetrack(img=racetrack_img)
-user_car = UserCar(img=car_img)
+# GUI
+gui = GUI(settings)
 
-# gui
-gui_batch = pg.graphics.Batch()
-dist_labels = []
-dist_value_labels = []
-intersection_points = []
-load_gui()
+# RL Environment
+rl_env = RacegameEnv(ai_car, render_mode="human")
+
+online_net = Network(rl_env)
+target_net = Network(rl_env)
+target_net.load_state_dict(online_net.state_dict())  # set weights of target_net to online_net
+
+optimizer = torch.optim.Adam(online_net.parameters(), lr=5e-4)
+replay_buffer = deque(maxlen=BUFFER_SIZE)
+rew_buffer = deque([0.0], maxlen=100)
+
+obs, _ = rl_env.reset()
+step = 0
+episode_reward = 0.0
+
+
+# Input-handlers
+@game_window.event
+def on_mouse_press(x, y, button, modifiers):
+    if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        racetrack.create_boundary(x, y, button)
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        racetrack.create_goal(x, y, button)
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        global draw
+        if button == pg.window.mouse.LEFT:
+            draw = not draw
+        elif button == pg.window.mouse.RIGHT:
+            rl_env.reset()
+
+
+@game_window.event
+def on_key_press(symbol, modifiers):
+    if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        user_car.key_press(symbol, modifiers)
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        pass
 
 
 @game_window.event
 def on_key_release(symbol, modifiers):
     if symbol == key.M:
-        next_status = math.fmod(settings.GAME_STATUS.value + 1, 3)
+        next_status = math.fmod(settings.GAME_STATUS.value + 1, 4)
         load_status(GameStatus(next_status))
+
+    if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        user_car.key_release(symbol, modifiers)
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        pass
 
 
 @game_window.event
 def on_draw():
     game_window.clear()
-    for obj in game_objects:
-        obj.draw()
-    racetrack.racetrack_batch.draw()
+
+    if draw:
+        for obj in game_objects:
+            if hasattr(obj, "draw"):
+                obj.draw()
 
     if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
         pass
-    else:
-        if settings.GAME_STATUS == GameStatus.USER_CONTROLS:
-            user_car.car_batch.draw()
-            gui_batch.draw()
-        elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
-            pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        pass
 
 
 load_status(settings.GAME_STATUS)
 
 
-def sensor_intersections(car: Car):
-    for i in range(8):
-        closest_dist = math.inf
-        sensor = car.sensors[i]
-        i_x_min, i_y_min = sensor.x2, sensor.y2
-        for boundary in racetrack.boundaries:
-            i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
-                                                 [boundary.x2, boundary.y2])
-            dist = math.sqrt((i_x - sensor.x)**2 + (i_y - sensor.y)**2)
-            dist_to_sensor_end = math.sqrt((i_x - sensor.x2)**2 + (i_y - sensor.y2)**2)
-            if dist < closest_dist:
-                if dist_to_sensor_end < settings.SENSOR_LENGTH:
-                    i_x_min, i_y_min = i_x, i_y
-                    closest_dist = dist
-        if closest_dist < settings.CAR_HIT_BOX:
-            car.game_over()
-        else:
-            dist_value_labels[i].text = str(round(closest_dist, 1))
-            intersection_points[i].x, intersection_points[i].y = i_x_min, i_y_min
+def rl_fill_replay_buffer():
+    global obs
+
+    action = rl_env.action_space.sample()
+
+    new_obs, rew, done, *_ = rl_env.step(action)
+    transition = (obs, action, rew, done, new_obs)
+    replay_buffer.append(transition)
+    obs = new_obs
+
+    if done:
+        obs, _ = rl_env.reset()
+
+
+def rl_train():
+    global step, obs, episode_reward
+    epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+
+    rnd_sample = random.random()
+
+    if rnd_sample <= epsilon:
+        action = rl_env.action_space.sample()
+    else:
+        action = online_net.act(obs)
+
+    new_obs, rew, done, *_ = rl_env.step(action)
+    transition = (obs, action, rew, done, new_obs)
+    replay_buffer.append(transition)
+    obs = new_obs
+
+    episode_reward += rew
+
+    if done:
+        obs, _ = rl_env.reset()
+
+        rew_buffer.append(episode_reward)
+        episode_reward = 0.0
+
+    if len(rew_buffer) >= 100:
+        if np.mean(rew_buffer) >= 10:
+            rl_env.reset()
+            action = online_net.act(obs)
+            obs, _, done, *_ = rl_env.step(action)
+            if done:
+                rl_env.reset()
+
+    # Start Gradient Step
+    transitions = random.sample(replay_buffer, BATCH_SIZE)
+
+    obses = np.asarray([t[0] for t in transitions])
+    actions = np.asarray([t[1] for t in transitions])
+    rews = np.asarray([t[2] for t in transitions])
+    dones = np.asarray([t[3] for t in transitions])
+    new_obses = np.asarray([t[4] for t in transitions])
+
+    obses_t = torch.as_tensor(obses, dtype=torch.float32)
+    actions_t = torch.as_tensor(actions, dtype=torch.int64).unsqueeze(-1)  # unsqueeze(-1) to add dimensions in the end
+    rews_t = torch.as_tensor(rews, dtype=torch.float32).unsqueeze(-1)
+    dones_t = torch.as_tensor(dones, dtype=torch.float32).unsqueeze(-1)
+    new_obses_t = torch.as_tensor(new_obses, dtype=torch.float32)
+
+    # Compute targets
+    target_q_values = target_net(new_obses_t)
+    max_target_q_values = target_q_values.max(dim=1, keepdim=True)[0]
+    targets = rews_t + GAMMA * (1 - dones_t) * max_target_q_values
+
+    # Compute Loss
+    q_values = online_net(obses_t)
+    action_q_values = torch.gather(input=q_values, dim=1, index=actions_t)
+    loss = nn.functional.smooth_l1_loss(action_q_values, targets)
+
+    # Gradient Descent Step
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    # Update Target Network
+    if step & TARGET_UPDATE_FREQ == 0:
+        target_net.load_state_dict(online_net.state_dict())
+
+    # Logging
+    if step % 500 == 0:
+        print()
+        print('Step', step)
+        print('Avg Rew', np.mean(rew_buffer), ', Epsilon', epsilon)
+
+        print()
+
+    step += 1
 
 
 def update(dt):
-    for obj in game_objects_to_update:
-        obj.update(dt)
-    sensor_intersections(user_car)
+    for obj in game_objects:
+        if hasattr(obj, "update_obj"):
+            obj.update_obj(dt)
+
+    if settings.GAME_STATUS == GameStatus.DRAW_BOUNDARIES:
+        pass
+    elif settings.GAME_STATUS == GameStatus.DRAW_GOALS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
+        pass
+    elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
+        # random_action = random.randint(0, 7)
+        # rl_env.step(random_action)
+        if len(replay_buffer) < MIN_REPLAY_SIZE:
+            if len(replay_buffer) % 100 == 0:
+                print(len(replay_buffer))
+            rl_fill_replay_buffer()
+        else:
+            rl_train()
+
 
 
 if __name__ == '__main__':
-    pg.clock.schedule_interval(update, 1/120.0)
+    pg.clock.schedule_interval(update, 1/settings.RENDER_FPS)
     pg.app.run()

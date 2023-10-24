@@ -23,15 +23,18 @@ class Racetrack(pg.sprite.Sprite):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.x = GameSettings.WINDOW_WIDTH // 2
         self.y = GameSettings.WINDOW_HEIGHT // 2
         self.boundaries = []
         self.boundaries_start_coord = None
         self.boundary_curr_start_coord = None
-        self.racetrack_batch = pg.graphics.Batch()
+        self.goals = []
+        self.goal_start_coord = None
+        self.n_goals = 0
+        self.boundary_batch = pg.graphics.Batch()
+        self.goal_batch = pg.graphics.Batch()
 
-    def on_mouse_press(self, x, y, button, modifiers):
+    def create_boundary(self, x, y, button):
         if button == mouse.RIGHT:
             # remove last boundary
             print("remove last boundary")
@@ -56,7 +59,7 @@ class Racetrack(pg.sprite.Sprite):
                                    self.boundaries_start_coord[1],
                                    color=GameSettings.BOUNDARY_COLOR,
                                    width=GameSettings.LINE_WIDTH,
-                                   batch=self.racetrack_batch)
+                                   batch=self.boundary_batch)
                 self.boundaries.append(b)
                 self.boundaries_start_coord = None
                 self.boundary_curr_start_coord = None
@@ -69,6 +72,35 @@ class Racetrack(pg.sprite.Sprite):
                                               self.boundary_curr_start_coord[1], x, y,
                                               color=GameSettings.BOUNDARY_COLOR,
                                               width=GameSettings.LINE_WIDTH,
-                                              batch=self.racetrack_batch)
+                                              batch=self.boundary_batch)
                     self.boundaries.append(boundary)
                     self.boundary_curr_start_coord = (x, y)
+
+    def create_goal(self, x, y, button):
+        if button == mouse.RIGHT:
+            if self.goal_start_coord is None and self.goals:
+                print("remove last goal")
+                self.goals.pop()
+                self.n_goals -= 1
+            else:
+                print("remove start point")
+                self.goal_start_coord = None
+
+        if button == mouse.LEFT:
+            if self.goal_start_coord is None:
+                print("set start point")
+                self.goal_start_coord = (x, y)
+            else:
+                print("next goal")
+                g = pg.shapes.Line(self.goal_start_coord[0], self.goal_start_coord[1], x, y,
+                                   color=GameSettings.GOAL_COLOR,
+                                   width=GameSettings.LINE_WIDTH,
+                                   batch=self.goal_batch)
+                self.goals.append(g)
+                self.n_goals += 1
+                self.goal_start_coord = None
+
+    def draw(self):
+        super().draw()
+        self.boundary_batch.draw()
+        self.goal_batch.draw()
