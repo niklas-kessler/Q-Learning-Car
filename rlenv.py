@@ -1,17 +1,29 @@
 import gymnasium as gym
 from gymnasium import spaces
-
 from game_settings import *
 
-
-GAMMA = 0.99  # discount rate traget learning
-BATCH_SIZE = 32  # how many transistions to sample from buffer
-BUFFER_SIZE = 50000  # how many to store before overwriting all transitions
-MIN_REPLAY_SIZE = 3000
-EPSILON_START = 1.0
-EPSILON_END = 0.02
-EPSILON_DECAY = 20000
-TARGET_UPDATE_FREQ = 1000
+# Import training configuration
+try:
+    from training_config import *
+except ImportError:
+    # Fallback values if config file is not available
+    GAMMA = 0.99
+    BATCH_SIZE = 64
+    BUFFER_SIZE = 100000
+    MIN_REPLAY_SIZE = 5000
+    EPSILON_START = 1.0
+    EPSILON_END = 0.01
+    EPSILON_DECAY = 50000
+    TARGET_UPDATE_FREQ = 1000
+    LEARNING_RATE = 1e-4
+    
+    # Reward system
+    CRASH_PENALTY = -100
+    GOAL_REWARD = 50
+    DISTANCE_REWARD_SCALE = 0.5
+    VELOCITY_REWARD_SCALE = 0.1
+    SENSOR_PENALTY_SCALE = 0.3
+    SURVIVAL_REWARD = 0.01
 
 
 class RacegameEnv(gym.Env):
@@ -59,17 +71,46 @@ class RacegameEnv(gym.Env):
         }
 
     def step(self, action):
+        # Store previous distance for reward calculation
+        prev_distance = self.car.distance_next_goal
+        prev_velocity = self.car.velocity
+        
         self.car.action(action)
 
-        # TODO
         terminated = self.car.collision
         goal = self.car.goal
+        
+        # Improved reward structure using config parameters
+        reward = 0.0
+        
         if terminated:
-            reward = -15
+            reward = CRASH_PENALTY  # Heavy penalty for crashing
         elif goal:
-            reward = 1
+            reward = GOAL_REWARD   # Big reward for reaching goal
         else:
-            reward = 0
+            # Distance-based reward (encourage getting closer to goal)
+            current_distance = self.car.distance_next_goal
+            if current_distance < prev_distance:
+                reward += DISTANCE_REWARD_SCALE  # Reward for getting closer
+            else:
+                reward -= DISTANCE_REWARD_SCALE * 0.2  # Small penalty for getting further
+            
+            # Velocity-based reward (encourage movement but not too fast)
+            speed = abs(self.car.velocity)
+            if speed > 50:  # Encourage some speed
+                reward += VELOCITY_REWARD_SCALE
+            elif speed < 10:  # Discourage standing still
+                reward -= VELOCITY_REWARD_SCALE * 2
+                
+            # Sensor-based reward (avoid walls)
+            min_sensor_val = min(self.car.sensor_val)
+            if min_sensor_val < 20:  # Close to wall
+                reward -= SENSOR_PENALTY_SCALE
+            elif min_sensor_val > 50:  # Safe distance from walls
+                reward += SENSOR_PENALTY_SCALE * 0.3
+                
+            # Small positive reward for surviving
+            reward += SURVIVAL_REWARD
 
         observation = self._get_obs()
         info = self._get_info()

@@ -58,7 +58,7 @@ class Racetrack(pg.sprite.Sprite):
                                    self.boundaries_start_coord[0],
                                    self.boundaries_start_coord[1],
                                    color=GameSettings.BOUNDARY_COLOR,
-                                   width=GameSettings.LINE_WIDTH,
+                                   thickness=GameSettings.LINE_WIDTH,
                                    batch=self.boundary_batch)
                 self.boundaries.append(b)
                 self.boundaries_start_coord = None
@@ -71,7 +71,7 @@ class Racetrack(pg.sprite.Sprite):
                     boundary = pg.shapes.Line(self.boundary_curr_start_coord[0],
                                               self.boundary_curr_start_coord[1], x, y,
                                               color=GameSettings.BOUNDARY_COLOR,
-                                              width=GameSettings.LINE_WIDTH,
+                                              thickness=GameSettings.LINE_WIDTH,
                                               batch=self.boundary_batch)
                     self.boundaries.append(boundary)
                     self.boundary_curr_start_coord = (x, y)
@@ -94,7 +94,7 @@ class Racetrack(pg.sprite.Sprite):
                 print("next goal")
                 g = pg.shapes.Line(self.goal_start_coord[0], self.goal_start_coord[1], x, y,
                                    color=GameSettings.GOAL_COLOR,
-                                   width=GameSettings.LINE_WIDTH,
+                                   thickness=GameSettings.LINE_WIDTH,
                                    batch=self.goal_batch)
                 self.goals.append(g)
                 self.n_goals += 1

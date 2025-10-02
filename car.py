@@ -161,7 +161,7 @@ class Car(pg.sprite.Sprite):
                 sensor = pg.shapes.Line(start_x, start_y, end_x, end_y,
                                       batch=self.batch,
                                       color=GameSettings.SENSOR_COLOR,
-                                      width=GameSettings.LINE_WIDTH)
+                                      thickness=GameSettings.LINE_WIDTH)
                 self.sensors.append(sensor)
                 self.intersection_points.append(pg.shapes.Circle(x=0, y=0, radius=GameSettings.INTERSECTION_POINT_SIZE,
                                                             batch=self.batch,
