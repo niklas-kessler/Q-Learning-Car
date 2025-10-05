@@ -23,6 +23,58 @@ import torch
 from torch import nn
 from training_monitor import TrainingMonitor, save_model
 from training_config import *
+import time
+import glob
+
+# ========================
+# CHECKPOINT FUNCTIONALITY
+# ========================
+def find_latest_checkpoint():
+    """Find the latest checkpoint automatically."""
+    model_files = glob.glob("models/model_step_*.pth")
+    if not model_files:
+        return None, 0
+    
+    latest_model = max(model_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+    step_number = int(latest_model.split('_')[-1].split('.')[0])
+    return latest_model, step_number
+
+def load_checkpoint_if_available(online_net, target_net):
+    """Load checkpoint if auto-resume is enabled."""
+    if not AUTO_RESUME:
+        return False, 0, EPSILON_START, deque(maxlen=100)
+    
+    model_path, step_number = find_latest_checkpoint()
+    if not model_path:
+        print("📋 No checkpoint found - starting fresh training")
+        return False, 0, EPSILON_START, deque(maxlen=100)
+    
+    try:
+        print(f"🔄 Loading checkpoint: {model_path}")
+        checkpoint = torch.load(model_path, map_location=DEVICE, weights_only=False)
+        
+        # Load model weights
+        online_net.load_state_dict(checkpoint['model_state_dict'])
+        target_net.load_state_dict(checkpoint['model_state_dict'])
+        
+        # Restore training state
+        step = step_number
+        epsilon = checkpoint.get('epsilon', EPSILON_END)
+        avg_reward = checkpoint.get('avg_reward', 0.0)
+        
+        # Initialize reward buffer with checkpoint value
+        rew_buffer = deque([avg_reward], maxlen=100)
+        
+        print(f"✅ Resumed from step {step:,}")
+        print(f"🎯 Epsilon: {epsilon:.4f}")
+        print(f"🏆 Avg Reward: {avg_reward:.2f}")
+        
+        return True, step, epsilon, rew_buffer
+        
+    except Exception as e:
+        print(f"❌ Error loading checkpoint: {e}")
+        print("📋 Starting fresh training instead")
+        return False, 0, EPSILON_START, deque(maxlen=100)
 
 
 def resize_image(img, width, height):
@@ -87,15 +139,25 @@ rl_env = RacegameEnv(ai_car, render_mode="human")
 # Neural Networks - using central config for device
 online_net = Network(rl_env)
 target_net = Network(rl_env)
-target_net.load_state_dict(online_net.state_dict())
 
 # Optimizer with config learning rate
 optimizer = torch.optim.Adam(online_net.parameters(), lr=LEARNING_RATE)
 replay_buffer = deque(maxlen=BUFFER_SIZE)
-rew_buffer = deque([0.0], maxlen=100)
+
+# Initialize training variables with checkpoint loading
+checkpoint_loaded, step, epsilon, rew_buffer = load_checkpoint_if_available(online_net, target_net)
+
+if not checkpoint_loaded:
+    # Fresh training initialization
+    target_net.load_state_dict(online_net.state_dict())
+    step = 0
+    epsilon = EPSILON_START
+    rew_buffer = deque([0.0], maxlen=100)
+    print(f"🚀 STARTING FRESH TRAINING")
+else:
+    print(f"🚀 RESUMING TRAINING from step {step:,}")
 
 obs, _ = rl_env.reset()
-step = 0
 episode_reward = 0.0
 
 

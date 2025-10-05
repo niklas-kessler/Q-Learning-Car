@@ -84,4 +84,13 @@ SAVE_PLOTS_ONLY = True            # Speichert Plots, zeigt sie aber nicht an
 PLOT_DPI = 150                    # Plot Qualität
 PLOT_FIGSIZE = (15, 10)           # Plot Größe
 
+# ========================
+# RESUME TRAINING SETTINGS
+# ========================
+AUTO_RESUME = True                # Automatically resume from latest checkpoint
+RESUME_FROM_STEP = None          # None = auto-find, or specific step number
+RESUME_MODEL_PATH = None         # None = auto-find, or specific model path
+
 print(f"⚙️  Training config loaded - Device: {DEVICE}")
+if AUTO_RESUME:
+    print(f"🔄 Auto-resume enabled - will continue from latest checkpoint if available")
