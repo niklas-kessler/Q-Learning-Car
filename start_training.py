@@ -13,6 +13,7 @@ from training_config import *
 
 def check_environment():
     """Check if the environment is set up correctly."""
+    
     print("="*50)
     print("Q-LEARNING CAR - TRAINING ENVIRONMENT CHECK")
     print("="*50)
@@ -29,13 +30,8 @@ def check_environment():
         print(f"CUDA current device: {torch.cuda.current_device()}")
         print(f"CUDA device name: {torch.cuda.get_device_name()}")
     
-    # Check device selection
-    if USE_CUDA and cuda_available:
-        device = torch.device(f"cuda:{DEVICE_ID}")
-        print(f"Selected device: {device}")
-    else:
-        device = torch.device("cpu")
-        print(f"Selected device: {device} (CUDA not available or disabled)")
+    # Show selected device from config
+    print(f"Selected device: {DEVICE}")
     
     print("="*50)
     print("TRAINING HYPERPARAMETERS")
@@ -48,9 +44,10 @@ def check_environment():
     print(f"Epsilon Start: {EPSILON_START}")
     print(f"Epsilon End: {EPSILON_END}")
     print(f"Epsilon Decay: {EPSILON_DECAY}")
+    print(f"Network Architecture: {NETWORK_HIDDEN_LAYERS}")
     print("="*50)
     
-    return device
+    return DEVICE
 
 def start_training():
     """Start the training process."""

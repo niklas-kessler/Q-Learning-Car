@@ -19,9 +19,10 @@ from collections import deque
 import itertools
 import numpy as np
 import random
-from torch import nn
 import torch
+from torch import nn
 from training_monitor import TrainingMonitor, save_model
+from training_config import *
 
 
 def resize_image(img, width, height):
@@ -77,20 +78,18 @@ ai_car = AICar(img=car_img, racetrack=racetrack)
 # Training monitoring
 monitor = TrainingMonitor()
 
-# Device setup for GPU acceleration
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
-
 # GUI
 gui = GUI(settings)
 
 # RL Environment
 rl_env = RacegameEnv(ai_car, render_mode="human")
 
-online_net = Network(rl_env, device=device)
-target_net = Network(rl_env, device=device)
-target_net.load_state_dict(online_net.state_dict())  # set weights of target_net to online_net
+# Neural Networks - using central config for device
+online_net = Network(rl_env)
+target_net = Network(rl_env)
+target_net.load_state_dict(online_net.state_dict())
 
+# Optimizer with config learning rate
 optimizer = torch.optim.Adam(online_net.parameters(), lr=LEARNING_RATE)
 replay_buffer = deque(maxlen=BUFFER_SIZE)
 rew_buffer = deque([0.0], maxlen=100)
@@ -254,12 +253,12 @@ def rl_train():
     dones = np.asarray([t[3] for t in transitions])
     new_obses = np.asarray([t[4] for t in transitions])
 
-    # Convert to tensors and move to GPU
-    obses_t = torch.as_tensor(obses, dtype=torch.float32, device=device)
-    actions_t = torch.as_tensor(actions, dtype=torch.int64, device=device).unsqueeze(-1)
-    rews_t = torch.as_tensor(rews, dtype=torch.float32, device=device).unsqueeze(-1)
-    dones_t = torch.as_tensor(dones, dtype=torch.float32, device=device).unsqueeze(-1)
-    new_obses_t = torch.as_tensor(new_obses, dtype=torch.float32, device=device)
+    # Convert to tensors and move to device from config
+    obses_t = torch.as_tensor(obses, dtype=torch.float32, device=DEVICE)
+    actions_t = torch.as_tensor(actions, dtype=torch.int64, device=DEVICE).unsqueeze(-1)
+    rews_t = torch.as_tensor(rews, dtype=torch.float32, device=DEVICE).unsqueeze(-1)
+    dones_t = torch.as_tensor(dones, dtype=torch.float32, device=DEVICE).unsqueeze(-1)
+    new_obses_t = torch.as_tensor(new_obses, dtype=torch.float32, device=DEVICE)
 
     # Compute targets using target network
     with torch.no_grad():
@@ -284,8 +283,8 @@ def rl_train():
     if step % TARGET_UPDATE_FREQ == 0:
         target_net.load_state_dict(online_net.state_dict())
 
-    # Enhanced Logging and Monitoring
-    if step % 1000 == 0:
+    # Enhanced Logging and Monitoring using config frequencies
+    if step % LOG_FREQ == 0:
         avg_reward_100 = np.mean(rew_buffer) if len(rew_buffer) > 0 else 0
         
         # Log to monitor
@@ -298,14 +297,14 @@ def rl_train():
         print(f'Epsilon: {epsilon:.3f}')
         print(f'Loss: {loss.item():.4f}')
         print(f'Replay Buffer Size: {len(replay_buffer)}')
-        print(f'Device: {device}')
+        print(f'Device: {DEVICE}')
         if len(rew_buffer) > 0:
             print(f'Max Reward: {max(rew_buffer):.2f}')
             print(f'Min Reward: {min(rew_buffer):.2f}')
         print('=' * 50)
         
         # Save model and metrics periodically
-        if step % 10000 == 0:
+        if step % SAVE_FREQ == 0:
             model_path = f"models/model_step_{step}.pth"
             os.makedirs("models", exist_ok=True)
             save_model(online_net, model_path, {
@@ -321,14 +320,15 @@ def rl_train():
             })
             monitor.save_metrics()
             
-        # Generate plots every 5000 steps
-        if step % 5000 == 0 and step > 0:
+        # Generate plots using config frequency
+        if step % PLOT_FREQ == 0 and step > 0:
             monitor.plot_training_progress()
 
     step += 1
 
 
 def update(dt):
+    #print(f"Update called with dt={dt:.4f}s")  # Debug log for update calls
     for obj in game_objects:
         if hasattr(obj, "update_obj"):
             obj.update_obj(dt)
@@ -351,7 +351,7 @@ def update(dt):
             rl_train()
 
 
+pg.clock.schedule_interval(update, 1/settings.RENDER_FPS)
 
 if __name__ == '__main__':
-    pg.clock.schedule_interval(update, 1/settings.RENDER_FPS)
     pg.app.run()

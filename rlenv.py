@@ -1,29 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 from game_settings import *
-
-# Import training configuration
-try:
-    from training_config import *
-except ImportError:
-    # Fallback values if config file is not available
-    GAMMA = 0.99
-    BATCH_SIZE = 64
-    BUFFER_SIZE = 100000
-    MIN_REPLAY_SIZE = 5000
-    EPSILON_START = 1.0
-    EPSILON_END = 0.01
-    EPSILON_DECAY = 50000
-    TARGET_UPDATE_FREQ = 1000
-    LEARNING_RATE = 1e-4
-    
-    # Reward system
-    CRASH_PENALTY = -100
-    GOAL_REWARD = 50
-    DISTANCE_REWARD_SCALE = 0.5
-    VELOCITY_REWARD_SCALE = 0.1
-    SENSOR_PENALTY_SCALE = 0.3
-    SURVIVAL_REWARD = 0.01
+from training_config import *  # Import ALL hyperparameters from central config
 
 
 class RacegameEnv(gym.Env):

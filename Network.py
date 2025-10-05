@@ -10,32 +10,30 @@ import matplotlib.pyplot as plt
 
 class Network(nn.Module):
 
-    def __init__(self, env, device=None):
+    def __init__(self, env):
         super().__init__()
         
-        # Automatic device selection
-        if device is None:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        else:
-            self.device = device
-            
+        from training_config import DEVICE, INPUT_SIZE, NETWORK_HIDDEN_LAYERS, DROPOUT_RATE
+        
+        self.device = DEVICE
         print(f"Network initialized on device: {self.device}")
 
-        # TODO: dynamic
-        in_features = 8  # no. input features
-
-        # Improved network architecture with better capacity and regularization
-        self.net = nn.Sequential(
-            nn.Linear(in_features, 128),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, env.action_space.n)
-        )
+        # Build network architecture from config
+        layers = []
+        prev_size = INPUT_SIZE
+        
+        for hidden_size in NETWORK_HIDDEN_LAYERS:
+            layers.extend([
+                nn.Linear(prev_size, hidden_size),
+                nn.ReLU(),
+                nn.Dropout(DROPOUT_RATE)
+            ])
+            prev_size = hidden_size
+        
+        # Output layer
+        layers.append(nn.Linear(prev_size, env.action_space.n))
+        
+        self.net = nn.Sequential(*layers)
         
         # Move network to device
         self.to(self.device)
