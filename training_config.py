@@ -19,19 +19,19 @@ else:
     print("🖥️  CPU Training (no GPU available)")
 
 # ========================
-# NEURAL NETWORK
+# NEURAL NETWORK (GPU OPTIMIZED)
 # ========================
 INPUT_SIZE = 8                    # Sensor inputs
 OUTPUT_SIZE = 8                   # Action space size
-NETWORK_HIDDEN_LAYERS = [128, 128, 64]  # Hidden layer sizes
+NETWORK_HIDDEN_LAYERS = [256, 256, 128]  # Increased layer sizes for better GPU utilization
 DROPOUT_RATE = 0.1
 ACTIVATION_FUNCTION = "relu"      # "relu", "tanh", "sigmoid"
 
 # ========================
-# Q-LEARNING PARAMETERS
+# Q-LEARNING PARAMETERS (GPU OPTIMIZED)
 # ========================
 LEARNING_RATE = 1e-4
-BATCH_SIZE = 64
+BATCH_SIZE = 2048                  # Increased for better GPU utilization (was 64)
 BUFFER_SIZE = 100000
 MIN_REPLAY_SIZE = 5000
 GAMMA = 0.99                      # Discount factor
@@ -48,7 +48,7 @@ EPSILON_DECAY = 50000             # Steps over which epsilon decays
 # REWARD SYSTEM
 # ========================
 CRASH_PENALTY = -100              # Penalty for collision
-GOAL_REWARD = 50                  # Reward for reaching goal
+GOAL_REWARD = 250                  # Reward for reaching goal
 DISTANCE_REWARD_SCALE = 0.5       # Scale for distance-based rewards
 VELOCITY_REWARD_SCALE = 0.1       # Scale for velocity-based rewards
 SENSOR_PENALTY_SCALE = 0.3        # Scale for sensor-based penalties
@@ -59,7 +59,7 @@ SURVIVAL_REWARD = 0.01            # Small reward for each step survived
 # ========================
 LOG_FREQ = 1000                   # Print logs every N steps
 SAVE_FREQ = 10000                 # Save model every N steps
-PLOT_FREQ = 5000                  # Generate plots every N steps
+PLOT_FREQ = 2000                  # Generate plots every N steps (reduced for better monitoring)
 MAX_STEPS = 1000000               # Maximum training steps
 
 # ========================
@@ -75,5 +75,13 @@ SAVE_TRAINING_LOGS = True
 SAVE_MODEL_CHECKPOINTS = True
 GENERATE_PLOTS = True
 VERBOSE_LOGGING = True
+
+# ========================
+# PLOT CONFIGURATION (NON-BLOCKING!)
+# ========================
+PLOT_BACKEND = 'Agg'              # Non-blocking plot backend
+SAVE_PLOTS_ONLY = True            # Speichert Plots, zeigt sie aber nicht an
+PLOT_DPI = 150                    # Plot Qualität
+PLOT_FIGSIZE = (15, 10)           # Plot Größe
 
 print(f"⚙️  Training config loaded - Device: {DEVICE}")

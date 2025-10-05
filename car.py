@@ -173,24 +173,42 @@ class Car(pg.sprite.Sprite):
     def check_collision(self):
         """This method calculates the distances to the racetrack-boundaries and checks for collision"""
         for i in range(8):
-            closest_dist = math.inf
+            closest_dist = GameSettings.SENSOR_LENGTH  # Use SENSOR_LENGTH instead of math.inf
             sensor = self.sensors[i]
             i_x_min, i_y_min = sensor.x2, sensor.y2
 
             # Boundaries
             for boundary in self.racetrack.boundaries:
-                i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
-                                             [boundary.x2, boundary.y2])
-                dist = math.sqrt((i_x - sensor.x) ** 2 + (i_y - sensor.y) ** 2)
-                dist_to_sensor_end = math.sqrt((i_x - sensor.x2) ** 2 + (i_y - sensor.y2) ** 2)
-                if dist < closest_dist:
-                    if dist_to_sensor_end < GameSettings.SENSOR_LENGTH:
-                        i_x_min, i_y_min = i_x, i_y
-                        closest_dist = dist
+                try:
+                    i_x, i_y = line_intersection([sensor.x, sensor.y], [sensor.x2, sensor.y2], [boundary.x, boundary.y],
+                                                 [boundary.x2, boundary.y2])
+                    
+                    # Check for invalid intersection results
+                    if math.isnan(i_x) or math.isnan(i_y) or math.isinf(i_x) or math.isinf(i_y):
+                        continue  # Skip invalid intersections
+                    
+                    dist = math.sqrt((i_x - sensor.x) ** 2 + (i_y - sensor.y) ** 2)
+                    dist_to_sensor_end = math.sqrt((i_x - sensor.x2) ** 2 + (i_y - sensor.y2) ** 2)
+                    
+                    # Additional validation for distance calculations
+                    if math.isnan(dist) or math.isinf(dist):
+                        continue  # Skip invalid distances
+                    
+                    if dist < closest_dist:
+                        if dist_to_sensor_end < GameSettings.SENSOR_LENGTH:
+                            i_x_min, i_y_min = i_x, i_y
+                            closest_dist = dist
+                            
+                except (ZeroDivisionError, ValueError, ArithmeticError):
+                    # Handle any mathematical errors gracefully
+                    continue
+                    
             if closest_dist < GameSettings.CAR_HIT_BOX:
                 return True
             else:
-                self.sensor_val[i] = round(closest_dist, 1)
+                # Ensure sensor value is always finite and within reasonable bounds
+                sensor_value = max(0.0, min(closest_dist, GameSettings.SENSOR_LENGTH))
+                self.sensor_val[i] = round(sensor_value, 1)
                 self.intersection_points[i].x, self.intersection_points[i].y = i_x_min, i_y_min
         return False
 

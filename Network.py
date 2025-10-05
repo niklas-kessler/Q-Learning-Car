@@ -37,6 +37,17 @@ class Network(nn.Module):
         
         # Move network to device
         self.to(self.device)
+        
+        # Initialize weights properly to prevent NaN issues
+        self.apply(self._init_weights)
+    
+    def _init_weights(self, module):
+        """Initialize network weights to prevent numerical issues."""
+        if isinstance(module, nn.Linear):
+            # Xavier/Glorot initialization
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
 
     def forward(self, x):
         # Ensure input is on the same device as the network
@@ -51,7 +62,16 @@ class Network(nn.Module):
             return random.randint(0, self.net[-1].out_features - 1)
         
         obs_t = torch.as_tensor(obs, dtype=torch.float32, device=self.device)
+        
+        # Check for invalid observations and return random action as fallback
+        if torch.any(torch.isnan(obs_t)) or torch.any(torch.isinf(obs_t)):
+            return random.randint(0, self.net[-1].out_features - 1)
+        
         q_values = self(obs_t.unsqueeze(0))
+        
+        # Check Q-values and return random action as fallback
+        if torch.any(torch.isnan(q_values)) or torch.any(torch.isinf(q_values)):
+            return random.randint(0, self.net[-1].out_features - 1)
         
         max_q_index = torch.argmax(q_values, dim=1)[0]
         action = max_q_index.detach().item()

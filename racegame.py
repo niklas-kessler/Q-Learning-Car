@@ -272,6 +272,11 @@ def rl_train():
     
     # Compute loss with gradient clipping
     loss = nn.functional.mse_loss(action_q_values, targets)  # Changed to MSE loss
+    
+    # Exit early if loss becomes NaN
+    if torch.isnan(loss):
+        print("🚨 CRITICAL: Loss is NaN! Skipping training step...")
+        return
 
     # Gradient Descent Step with clipping
     optimizer.zero_grad()
@@ -283,17 +288,22 @@ def rl_train():
     if step % TARGET_UPDATE_FREQ == 0:
         target_net.load_state_dict(online_net.state_dict())
 
-    # Enhanced Logging and Monitoring using config frequencies
+    # Log loss and basic metrics EVERY step for better plot continuity
+    epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+    avg_reward_100 = np.mean(rew_buffer) if len(rew_buffer) > 0 else 0
+    last_episode_reward = rew_buffer[-1] if len(rew_buffer) > 0 else episode_reward
+    
+    # Log to monitor EVERY step (not just LOG_FREQ)
+    monitor.log_step(step, last_episode_reward, loss.item(), epsilon, avg_reward_100)
+
+    # Enhanced console logging using config frequencies
     if step % LOG_FREQ == 0:
-        avg_reward_100 = np.mean(rew_buffer) if len(rew_buffer) > 0 else 0
-        
-        # Log to monitor
-        monitor.log_step(step, episode_reward, loss.item(), epsilon, avg_reward_100)
-        
         print()
         print('=' * 50)
         print(f'Step: {step}')
         print(f'Avg Reward (last 100): {avg_reward_100:.2f}')
+        print(f'Current Episode Reward: {episode_reward:.2f}')
+        print(f'Last Completed Episode: {last_episode_reward:.2f}')
         print(f'Epsilon: {epsilon:.3f}')
         print(f'Loss: {loss.item():.4f}')
         print(f'Replay Buffer Size: {len(replay_buffer)}')
@@ -319,10 +329,11 @@ def rl_train():
                 }
             })
             monitor.save_metrics()
-            
-        # Generate plots using config frequency
-        if step % PLOT_FREQ == 0 and step > 0:
-            monitor.plot_training_progress()
+
+    # Generate plots using config frequency (moved outside LOG_FREQ for more frequent plotting)
+    if step % PLOT_FREQ == 0 and step > 0:
+        print(f"📊 Generating plot at step {step}...")
+        monitor.plot_training_progress()
 
     step += 1
 
@@ -347,7 +358,7 @@ def update(dt):
             rl_fill_replay_buffer()
         else:
             if step % 100 == 0:  # Quick debug log every 100 steps
-                print(f"Training step: {step}")
+                print(f"Training step: {step} - Buffer size: {len(replay_buffer)}")
             rl_train()
 
 

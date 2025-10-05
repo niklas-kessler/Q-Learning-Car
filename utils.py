@@ -27,11 +27,26 @@ def line_intersection(line1_start, line1_end, line2_start, line2_end):
         x3, y3 = p2
         x4, y4 = q2
 
-        # Calculate the intersection point
-        x_intersect = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4))
-        y_intersect = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4))
+        try:
+            # Calculate the intersection point with division by zero protection
+            denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+            
+            # Check for parallel lines (denominator close to zero)
+            if abs(denominator) < 1e-10:
+                return 0, 0  # Lines are parallel, no intersection
+            
+            x_intersect = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denominator
+            y_intersect = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denominator
 
-        return x_intersect, y_intersect
+            # Validate results
+            if math.isnan(x_intersect) or math.isnan(y_intersect) or math.isinf(x_intersect) or math.isinf(y_intersect):
+                return 0, 0  # Return safe default for invalid results
+            
+            return x_intersect, y_intersect
+            
+        except (ZeroDivisionError, ValueError, ArithmeticError):
+            # Handle any mathematical errors gracefully
+            return 0, 0
     else:
         # Lines do not intersect
         return 0, 0

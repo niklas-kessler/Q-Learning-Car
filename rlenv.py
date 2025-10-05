@@ -1,5 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
+import math
 from game_settings import *
 from training_config import *  # Import ALL hyperparameters from central config
 
@@ -41,7 +42,17 @@ class RacegameEnv(gym.Env):
                 'br': self.car.sensor_val[6],
                 'fl': self.car.sensor_val[7]}
         """
-        return self.car.sensor_val
+        # Ensure all sensor values are finite and within bounds
+        sensor_vals = []
+        for val in self.car.sensor_val:
+            if math.isnan(val) or math.isinf(val):
+                # Replace invalid values with safe default (max sensor length)
+                sensor_vals.append(float(GameSettings.SENSOR_LENGTH))
+            else:
+                # Clamp to valid range
+                sensor_vals.append(max(0.0, min(float(val), float(GameSettings.SENSOR_LENGTH))))
+        
+        return sensor_vals
 
     def _get_info(self):
         return {
@@ -58,7 +69,7 @@ class RacegameEnv(gym.Env):
         terminated = self.car.collision
         goal = self.car.goal
         
-        # Improved reward structure using config parameters
+        # Improved reward structure using config parameters with NaN protection
         reward = 0.0
         
         if terminated:
@@ -68,6 +79,13 @@ class RacegameEnv(gym.Env):
         else:
             # Distance-based reward (encourage getting closer to goal)
             current_distance = self.car.distance_next_goal
+            
+            # Validate distances to prevent NaN
+            if math.isnan(current_distance) or math.isinf(current_distance):
+                current_distance = 1000.0  # Safe default
+            if math.isnan(prev_distance) or math.isinf(prev_distance):
+                prev_distance = 1000.0  # Safe default
+                
             if current_distance < prev_distance:
                 reward += DISTANCE_REWARD_SCALE  # Reward for getting closer
             else:
@@ -75,20 +93,38 @@ class RacegameEnv(gym.Env):
             
             # Velocity-based reward (encourage movement but not too fast)
             speed = abs(self.car.velocity)
+            
+            # Validate velocity
+            if math.isnan(speed) or math.isinf(speed):
+                speed = 0.0  # Safe default
+                
             if speed > 50:  # Encourage some speed
                 reward += VELOCITY_REWARD_SCALE
             elif speed < 10:  # Discourage standing still
                 reward -= VELOCITY_REWARD_SCALE * 2
                 
             # Sensor-based reward (avoid walls)
-            min_sensor_val = min(self.car.sensor_val)
-            if min_sensor_val < 20:  # Close to wall
-                reward -= SENSOR_PENALTY_SCALE
-            elif min_sensor_val > 50:  # Safe distance from walls
-                reward += SENSOR_PENALTY_SCALE * 0.3
+            try:
+                min_sensor_val = min(self.car.sensor_val)
+                # Validate sensor value
+                if math.isnan(min_sensor_val) or math.isinf(min_sensor_val):
+                    min_sensor_val = GameSettings.SENSOR_LENGTH  # Safe default
+                    
+                if min_sensor_val < 20:  # Close to wall
+                    reward -= SENSOR_PENALTY_SCALE
+                elif min_sensor_val > 50:  # Safe distance from walls
+                    reward += SENSOR_PENALTY_SCALE * 0.3
+            except (ValueError, TypeError):
+                # Handle empty or invalid sensor values
+                pass
                 
             # Small positive reward for surviving
             reward += SURVIVAL_REWARD
+
+        # Final validation of reward value
+        if math.isnan(reward) or math.isinf(reward):
+            print(f"⚠️  WARNING: Invalid reward detected, using fallback value")
+            reward = -1.0  # Safe fallback reward
 
         observation = self._get_obs()
         info = self._get_info()
