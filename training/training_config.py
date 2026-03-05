@@ -30,28 +30,28 @@ ACTIVATION_FUNCTION = "relu"      # "relu", "tanh", "sigmoid"
 # ========================
 # Q-LEARNING PARAMETERS (GPU OPTIMIZED)
 # ========================
-LEARNING_RATE = 1e-4
-BATCH_SIZE = 2048                  # Increased for better GPU utilization (was 64)
+LEARNING_RATE = 5e-5
+BATCH_SIZE = 128                  # Increased for better GPU utilization (was 64)
 BUFFER_SIZE = 100000
 MIN_REPLAY_SIZE = 5000
 GAMMA = 0.99                      # Discount factor
-TARGET_UPDATE_FREQ = 1000         # Update target network every N steps
+TARGET_UPDATE_FREQ = 5000         # Update target network every N steps (increased for stability)
 
 # ========================
 # EXPLORATION (EPSILON)
 # ========================
 EPSILON_START = 1.0
-EPSILON_END = 0.01
+EPSILON_END = 0.05
 EPSILON_DECAY = 50000             # Steps over which epsilon decays
 
 # ========================
 # REWARD SYSTEM
 # ========================
-CRASH_PENALTY = -100              # Penalty for collision
+CRASH_PENALTY = 100              # Penalty for collision
 GOAL_REWARD = 250                  # Reward for reaching goal
-DISTANCE_REWARD_SCALE = 0.5       # Scale for distance-based rewards
-VELOCITY_REWARD_SCALE = 0.1       # Scale for velocity-based rewards
-SENSOR_PENALTY_SCALE = 0.3        # Scale for sensor-based penalties
+DISTANCE_REWARD_SCALE = 0.05  # Scale for distance-based rewards
+VELOCITY_REWARD_SCALE = 0.01   # Scale for velocity-based rewards
+SENSOR_PENALTY_SCALE = 0.03       # Scale for sensor-based penalties
 SURVIVAL_REWARD = 0.01            # Small reward for each step survived
 
 # ========================

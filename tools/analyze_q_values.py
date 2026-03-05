@@ -3,16 +3,16 @@
 Quick Q-Values analysis tool for current training state.
 """
 import os
+import sys
+# Ensure project root is on the path when running this script directly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Prevent OpenMP library conflicts
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 import torch
 import numpy as np
-from Network import Network
-from rlenv import RacegameEnv
-from ai_car import AICar
-from racetrack import Racetrack
-from training_config import *
+from training.network import Network
+from training.training_config import *
 import glob
 
 def analyze_q_values():

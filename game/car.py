@@ -1,8 +1,8 @@
 import math
 import pyglet as pg
-from racetrack import Racetrack
-from game_settings import *
-from utils import *
+from .racetrack import Racetrack
+from .game_settings import *
+from .utils import *
 
 
 class Car(pg.sprite.Sprite):

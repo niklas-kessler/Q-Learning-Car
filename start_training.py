@@ -1,6 +1,6 @@
 """
-Simplified training starter script for Q-Learning Car.
-Run this to start training with optimized settings.
+Entry point for Q-Learning Car training.
+Run this script to launch the game and start training.
 """
 import os
 
@@ -9,106 +9,100 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 import torch
 import numpy as np
-from training_config import *
+from training.training_config import *
+
 
 def check_environment():
-    """Check if the environment is set up correctly."""
-    
-    print("="*50)
-    print("Q-LEARNING CAR - TRAINING ENVIRONMENT CHECK")
-    print("="*50)
-    
-    # Check PyTorch
+    """Print environment info and confirm setup before training."""
+    print("=" * 50)
+    print("Q-LEARNING CAR - ENVIRONMENT CHECK")
+    print("=" * 50)
+
     print(f"PyTorch version: {torch.__version__}")
-    
-    # Check CUDA
+
     cuda_available = torch.cuda.is_available()
     print(f"CUDA available: {cuda_available}")
-    
+
     if cuda_available:
         print(f"CUDA device count: {torch.cuda.device_count()}")
         print(f"CUDA current device: {torch.cuda.current_device()}")
         print(f"CUDA device name: {torch.cuda.get_device_name()}")
-    
-    # Show selected device from config
+
     print(f"Selected device: {DEVICE}")
-    
-    print("="*50)
+
+    print("=" * 50)
     print("TRAINING HYPERPARAMETERS")
-    print("="*50)
-    print(f"Learning Rate: {LEARNING_RATE}")
-    print(f"Batch Size: {BATCH_SIZE}")
-    print(f"Buffer Size: {BUFFER_SIZE}")
-    print(f"Min Replay Size: {MIN_REPLAY_SIZE}")
-    print(f"Gamma (Discount): {GAMMA}")
-    print(f"Epsilon Start: {EPSILON_START}")
-    print(f"Epsilon End: {EPSILON_END}")
-    print(f"Epsilon Decay: {EPSILON_DECAY}")
-    print(f"Network Architecture: {NETWORK_HIDDEN_LAYERS}")
-    print("="*50)
-    
+    print("=" * 50)
+    print(f"Learning Rate:      {LEARNING_RATE}")
+    print(f"Batch Size:         {BATCH_SIZE}")
+    print(f"Buffer Size:        {BUFFER_SIZE}")
+    print(f"Min Replay Size:    {MIN_REPLAY_SIZE}")
+    print(f"Gamma (Discount):   {GAMMA}")
+    print(f"Epsilon Start:      {EPSILON_START}")
+    print(f"Epsilon End:        {EPSILON_END}")
+    print(f"Epsilon Decay:      {EPSILON_DECAY}")
+    print(f"Network Layers:     {NETWORK_HIDDEN_LAYERS}")
+    print("=" * 50)
+
     return DEVICE
 
+
 def start_training():
-    """Start the training process."""
-    device = check_environment()
-    
-    print("\\n" + "="*60)
-    print("🏁 Q-LEARNING CAR - TRAINING SETUP")
-    print("="*60)
-    print("\\n📋 WICHTIGE ANWEISUNGEN:")
-    print("\\n1. 🎨 ZEICHNE ZUERST DIE STRECKE:")
-    print("   • Das Spiel startet im 'Draw Boundaries' Modus")
-    print("   • Zeichne die Streckenbegrenzungen mit der MAUS")
-    print("   • Drücke SPACE um zum nächsten Modus zu wechseln")
-    print("\\n2. 🎯 ZEICHNE DIE ZIELE:")
-    print("   • Im 'Draw Goals' Modus zeichne Zielpunkte")
-    print("   • Das Auto lernt diese Punkte anzufahren")
-    print("   • Drücke wieder SPACE für den nächsten Modus")
-    print("\\n3. 🚗 TESTE MANUELL (Optional):")
-    print("   • 'User Controls' Modus zum manuellen Testen")
-    print("   • Pfeiltasten zum Fahren")
-    print("   • Drücke SPACE für AI Training")
-    print("\\n4. 🤖 AI TRAINING:")
-    print("   • Das Auto trainiert automatisch")
-    print("   • Du siehst das Auto fahren und lernen!")
-    print("   • Logs erscheinen alle 1000 Steps in der Konsole")
-    print("   • Plots werden alle 5000 Steps generiert")
-    print("\\n💡 TIPP: Zeichne eine einfache ovale Strecke für beste Ergebnisse!")
-    print("\\n" + "="*60)
-    print("\\nStarte das Spiel...")
-    
-    # Import and start the game
+    """Launch the game window and start the training loop."""
+    check_environment()
+
+    print("\n" + "=" * 60)
+    print("Q-LEARNING CAR - SETUP INSTRUCTIONS")
+    print("=" * 60)
+    print("\n1. DRAW TRACK BOUNDARIES:")
+    print("   - The game opens in 'Draw Boundaries' mode")
+    print("   - Click to place boundary points with the mouse")
+    print("   - Press SPACE to advance to the next mode")
+    print("\n2. DRAW GOAL LINES:")
+    print("   - In 'Draw Goals' mode, click to place goal lines")
+    print("   - The agent will learn to drive through these checkpoints")
+    print("   - Press SPACE to advance")
+    print("\n3. TEST MANUALLY (optional):")
+    print("   - 'User Controls' mode lets you drive with arrow keys")
+    print("   - Press SPACE to start AI training")
+    print("\n4. AI TRAINING:")
+    print("   - The agent trains automatically in real time")
+    print(f"   - Console logs every {LOG_FREQ:,} steps")
+    print(f"   - Plots saved every {PLOT_FREQ:,} steps")
+    print(f"   - Checkpoints saved every {SAVE_FREQ:,} steps")
+    print("\nTip: A simple oval track works best for initial training.")
+    print("\n" + "=" * 60)
+    print("\nLaunching game window...")
+
     try:
         import racegame
         import pyglet as pg
-        
-        print("\\n✅ Spiel geladen! Das Fenster sollte sich öffnen.")
-        print("\\n🎮 STEUERUNG:")
-        print("   • SPACE = Nächster Modus") 
-        print("   • Maus = Zeichnen (in Draw Modi)")
-        print("   • Pfeiltasten = Fahren (in User Controls)")
-        print("   • ESC oder Fenster schließen = Beenden")
-        print("\\n🤖 Das Training läuft automatisch im AI Training Modus!")
-        print("    Logs und Plots werden automatisch erstellt.")
-        
-        # Start the main game loop
+
+        print("\nGame loaded. Draw your track, then press SPACE to begin training.")
+        print("\nControls:")
+        print("  SPACE         - Next mode")
+        print("  Mouse         - Draw (in draw modes)")
+        print("  Arrow keys    - Drive (in User Controls)")
+        print("  Right-click   - Reset environment (during AI training)")
+        print("  ESC / close   - Exit")
+
         pg.app.run()
-        
+
     except KeyboardInterrupt:
-        print("\\n\\n⏹️ Training durch Benutzer beendet.")
-        print("📊 Speichere Trainingsergebnisse...")
+        print("\n\nTraining stopped by user.")
+        print("Saving training results...")
         if 'racegame' in locals():
             try:
                 racegame.save_training_results()
-                print("✅ Ergebnisse gespeichert!")
+                print("Results saved.")
             except Exception as e:
-                print(f"❌ Fehler beim Speichern: {e}")
+                print(f"Could not save results: {e}")
     except Exception as e:
-        print(f"\\n❌ Fehler beim Starten: {e}")
+        print(f"\nError: {e}")
         import traceback
         traceback.print_exc()
-        print("\\n🔧 Stelle sicher, dass alle Abhängigkeiten installiert sind.")
+        print("\nMake sure all dependencies are installed: pip install -r requirements.txt")
+
 
 if __name__ == "__main__":
     start_training()

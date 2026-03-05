@@ -1,6 +1,6 @@
 import pyglet as pg
-from car import Car
-from game_settings import GameSettings
+from .car import Car
+from .game_settings import GameSettings
 
 
 class GUI:

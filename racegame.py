@@ -5,24 +5,23 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import pyglet as pg
 from pyglet.window import key
 import math
-import racetrack
-from car import Car
-from user_car import UserCar
-from ai_car import AICar
-from racetrack import Racetrack
-from game_settings import *
-from gui import GUI
-from rlenv import *
-from Network import Network
-from utils import *
+from game.car import Car
+from game.user_car import UserCar
+from game.ai_car import AICar
+from game.racetrack import Racetrack
+from game.game_settings import *
+from game.gui import GUI
+from game.utils import *
+from training.rlenv import *
+from training.network import Network
+from training.training_monitor import TrainingMonitor, save_model
+from training.training_config import *
 from collections import deque
 import itertools
 import numpy as np
 import random
 import torch
 from torch import nn
-from training_monitor import TrainingMonitor, save_model
-from training_config import *
 import time
 import glob
 

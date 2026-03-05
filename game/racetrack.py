@@ -1,7 +1,7 @@
 import math
 import pyglet as pg
 from pyglet.window import mouse
-from game_settings import *
+from .game_settings import *
 
 
 def print_boundaries(bound_arr):

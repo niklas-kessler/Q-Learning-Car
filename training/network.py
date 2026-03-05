@@ -13,7 +13,7 @@ class Network(nn.Module):
     def __init__(self, env):
         super().__init__()
         
-        from training_config import DEVICE, INPUT_SIZE, NETWORK_HIDDEN_LAYERS, DROPOUT_RATE
+        from .training_config import DEVICE, INPUT_SIZE, NETWORK_HIDDEN_LAYERS, DROPOUT_RATE
         
         self.device = DEVICE
         print(f"Network initialized on device: {self.device}")
@@ -67,14 +67,22 @@ class Network(nn.Module):
         if torch.any(torch.isnan(obs_t)) or torch.any(torch.isinf(obs_t)):
             return random.randint(0, self.net[-1].out_features - 1)
         
-        q_values = self(obs_t.unsqueeze(0))
-        
+        # Run the network in eval mode without dropout / grad for deterministic action selection
+        was_training = self.training
+        try:
+            self.eval()
+            with torch.no_grad():
+                q_values = self(obs_t.unsqueeze(0))
+        finally:
+            # Restore previous training mode
+            if was_training:
+                self.train()
+
         # Check Q-values and return random action as fallback
         if torch.any(torch.isnan(q_values)) or torch.any(torch.isinf(q_values)):
             return random.randint(0, self.net[-1].out_features - 1)
-        
-        max_q_index = torch.argmax(q_values, dim=1)[0]
-        action = max_q_index.detach().item()
 
+        max_q_index = torch.argmax(q_values, dim=1)[0]
+        action = int(max_q_index.detach().item())
         return action
 

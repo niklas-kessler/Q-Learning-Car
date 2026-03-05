@@ -1,8 +1,8 @@
 import gymnasium as gym
 from gymnasium import spaces
 import math
-from game_settings import *
-from training_config import *  # Import ALL hyperparameters from central config
+from game.game_settings import *
+from .training_config import *  # Import ALL hyperparameters from central config
 
 
 class RacegameEnv(gym.Env):
@@ -87,9 +87,9 @@ class RacegameEnv(gym.Env):
                 prev_distance = 1000.0  # Safe default
                 
             if current_distance < prev_distance:
-                reward += DISTANCE_REWARD_SCALE  # Reward for getting closer
+                reward += DISTANCE_REWARD_SCALE * GOAL_REWARD  # Reward for getting closer
             else:
-                reward -= DISTANCE_REWARD_SCALE * 0.2  # Small penalty for getting further
+                reward -= DISTANCE_REWARD_SCALE * GOAL_REWARD * 0.2  # Small penalty for getting further
             
             # Velocity-based reward (encourage movement but not too fast)
             speed = abs(self.car.velocity)
@@ -99,9 +99,9 @@ class RacegameEnv(gym.Env):
                 speed = 0.0  # Safe default
                 
             if speed > 50:  # Encourage some speed
-                reward += VELOCITY_REWARD_SCALE
+                reward += VELOCITY_REWARD_SCALE * GOAL_REWARD
             elif speed < 10:  # Discourage standing still
-                reward -= VELOCITY_REWARD_SCALE * 2
+                reward -= VELOCITY_REWARD_SCALE * GOAL_REWARD * 0.2
                 
             # Sensor-based reward (avoid walls)
             try:
@@ -111,9 +111,10 @@ class RacegameEnv(gym.Env):
                     min_sensor_val = GameSettings.SENSOR_LENGTH  # Safe default
                     
                 if min_sensor_val < 20:  # Close to wall
-                    reward -= SENSOR_PENALTY_SCALE
+                    # Use magnitude of crash penalty so this stays independent of goal reward
+                    reward -= SENSOR_PENALTY_SCALE * abs(CRASH_PENALTY)
                 elif min_sensor_val > 50:  # Safe distance from walls
-                    reward += SENSOR_PENALTY_SCALE * 0.3
+                    reward += SENSOR_PENALTY_SCALE * abs(CRASH_PENALTY) * 0.3
             except (ValueError, TypeError):
                 # Handle empty or invalid sensor values
                 pass

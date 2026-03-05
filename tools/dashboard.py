@@ -3,13 +3,16 @@
 Dashboard to monitor training progress and verify continuous loss logging.
 """
 import os
+import sys
+# Ensure project root is on the path when running this script directly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Prevent OpenMP library conflicts
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 import json
 import numpy as np
 from datetime import datetime
-from training_config import *
+from training.training_config import *
 
 def show_training_dashboard():
     """Show a dashboard of recent training sessions."""

@@ -1,4 +1,21 @@
 __pycache__/
+*.pyc
+*.pyo
+
+# Training outputs
 models/
 training_logs/
 plots/
+
+# Generated resume scripts
+resume_racegame.py
+
+# Environments
+.conda/
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
