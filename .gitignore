@@ -3,9 +3,9 @@ __pycache__/
 *.pyo
 
 # Training outputs
-models/
+models/local/
 training_logs/
-plots/
+plots/local/
 
 # Generated resume scripts
 resume_racegame.py
