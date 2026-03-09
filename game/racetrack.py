@@ -40,7 +40,16 @@ class Racetrack(pg.sprite.Sprite):
             print("remove last boundary")
             if self.boundaries:
                 b = self.boundaries.pop()
-                self.boundary_curr_start_coord = (b.x, b.y)
+                if self.boundaries:
+                    self.boundary_curr_start_coord = (b.x, b.y)
+                else:
+                    # All boundaries removed — reset to clean state so drawing can restart
+                    self.boundaries_start_coord = None
+                    self.boundary_curr_start_coord = None
+            elif self.boundary_curr_start_coord is not None:
+                # No segments yet but start point was placed — cancel it
+                self.boundaries_start_coord = None
+                self.boundary_curr_start_coord = None
 
         elif button == mouse.LEFT:
 
