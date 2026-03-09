@@ -6,12 +6,10 @@ A 2D racing game where an AI agent learns to drive using **Double Deep Q-Learnin
 
 ![Agent driving the circuit](RecordingTraining.gif)
 
-Draw a track, place goal checkpoints, and watch the agent go from crashing immediately to completing laps.
-
 ## Training Results
 
-After ~1 million gradient steps the agent reliably completes laps on the training circuit.
-
+After ~1 million gradient steps, the agent manages has learned basic steering and is able to complete entire laps on the training circuit. 
+Improvement then stagnates; one possible origin could lie in the exploration rate eventually becoming to small.
 ![Training progress](plots/20260309/training_progress_20260309_225746.png)
 
 ## How It Works
