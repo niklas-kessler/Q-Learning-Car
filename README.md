@@ -1,22 +1,30 @@
 # Q-Learning Car
 
-A 2D racing game where an AI agent learns to drive using **Deep Q-Learning (DQN)**. The agent observes 8 distance sensors and learns to navigate a custom-drawn track through trial and error.
+A 2D racing game where an AI agent learns to drive using **Double Deep Q-Learning (DDQN)**. The agent observes distance sensors and goal direction to navigate a custom-drawn track through trial and error.
 
 ## Demo
 
+![Agent driving the circuit](RecordingTraining.gif)
+
 Draw a track, place goal checkpoints, and watch the agent go from crashing immediately to completing laps.
+
+## Training Results
+
+After ~1 million gradient steps the agent reliably completes laps on the training circuit.
+
+![Training progress](plots/20260309/training_progress_20260309_225746.png)
 
 ## How It Works
 
-The agent uses a **Deep Q-Network (DQN)** with experience replay and a target network:
+The agent uses a **Double Deep Q-Network (DDQN)** with experience replay and a target network:
 
-- **State**: 8 sensor readings (distances to track boundaries in 8 directions)
+- **State**: 11 inputs — 8 sensor distances (normalized), velocity, angle to next goal, distance to next goal
 - **Actions**: 8 discrete movement directions (forward, forward-right, right, ...)
-- **Reward**: shaped signal based on goal proximity, speed, wall distance, and survival
-- **Network**: fully connected network with 3 hidden layers (256 → 256 → 128)
+- **Reward**: +250 for crossing a goal, −100 for crashing, +0.01 per step survived
+- **Network**: fully connected network with 2 hidden layers (128 → 64)
 - **Training**: epsilon-greedy exploration, replay buffer of 100k transitions, target network updated every 5000 steps
 
-Training runs live inside the game window at 60 FPS. Checkpoints are saved every 10,000 steps and training automatically resumes from the latest checkpoint on restart.
+Training runs live inside the game window at 60 FPS. Checkpoints are saved periodically and training can be resumed from the latest checkpoint.
 
 ## Project Structure
 
@@ -87,19 +95,19 @@ All hyperparameters are in [training/training_config.py](training/training_confi
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `LEARNING_RATE` | `5e-5` | Adam optimizer learning rate |
+| `LEARNING_RATE` | `1e-4` | Adam optimizer learning rate |
 | `BATCH_SIZE` | `128` | Replay buffer sample size |
 | `BUFFER_SIZE` | `100,000` | Experience replay capacity |
 | `GAMMA` | `0.99` | Discount factor |
-| `EPSILON_DECAY` | `50,000` | Steps to decay exploration |
-| `TARGET_UPDATE_FREQ` | `5,000` | Target network sync interval |
-| `NETWORK_HIDDEN_LAYERS` | `[256, 256, 128]` | Hidden layer sizes |
+| `EPSILON_DECAY` | `300,000` | Env steps to decay exploration from 1.0 → 0.05 |
+| `TARGET_UPDATE_FREQ` | `5,000` | Target network sync interval (gradient steps) |
+| `NETWORK_HIDDEN_LAYERS` | `[128, 64]` | Hidden layer sizes |
 
 ## Training Outputs
 
 | Path | Contents |
 |------|----------|
-| `models/` | Model checkpoints (`.pth`) every 10,000 steps |
+| `models/` | Model checkpoints (`.pth`) saved periodically during training |
 | `training_logs/` | Per-session metrics as JSON |
 | `plots/` | Training progress plots (loss, rewards, epsilon) |
 
