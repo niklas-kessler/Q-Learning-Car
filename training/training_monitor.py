@@ -2,7 +2,7 @@
 Training monitoring and visualization utilities for Q-Learning Car project.
 """
 import matplotlib
-# WICHTIG: Backend MUSS vor anderen matplotlib imports gesetzt werden
+# Must be set before other matplotlib imports
 matplotlib.use('Agg')  # Non-blocking backend
 
 import matplotlib.pyplot as plt
@@ -37,7 +37,7 @@ class TrainingMonitor:
         
         # Configure matplotlib for non-blocking plots
         plt.ioff()  # Turn off interactive mode
-        print(f"📊 TrainingMonitor initialized - Session: {self.session_id}")
+        print(f"TrainingMonitor initialized - Session: {self.session_id}")
         
     def log_step(self, step, episode_reward, loss, epsilon, avg_reward_100=None):
         """Log training metrics for a single step."""
@@ -67,7 +67,7 @@ class TrainingMonitor:
     def plot_training_progress(self, save_plot=True):
         """Create and SAVE training progress plots without blocking."""
         if not self.losses and not self.episode_rewards:
-            print("⚠️  No data to plot yet")
+            print("No data to plot yet")
             return
             
         try:
@@ -82,7 +82,7 @@ class TrainingMonitor:
             if self.losses:
                 axes[0, 0].plot(self.steps, self.losses, alpha=0.7, color='red', linewidth=1)
                 
-                # Moving average für Loss mit exakter Längen-Kontrolle
+                # Moving average for loss with exact length matching
                 if len(self.losses) > 50:
                     window = min(100, len(self.losses) // 10)
                     # Use 'same' mode and ensure exact length matching
@@ -117,7 +117,7 @@ class TrainingMonitor:
                 episode_numbers = list(range(1, len(self.episode_rewards) + 1))
                 axes[0, 1].plot(episode_numbers, self.episode_rewards, alpha=0.3, color='blue', label='Episode Rewards')
                 
-                # Moving average für Rewards mit exakter Längen-Kontrolle
+                # Moving average for rewards with exact length matching
                 if len(self.episode_rewards) > 10:
                     window = min(50, len(self.episode_rewards) // 5)
                     # Use 'same' mode and ensure exact length matching
@@ -155,7 +155,7 @@ class TrainingMonitor:
                 
                 # Add current epsilon
                 current_epsilon = self.epsilon_values[-1]
-                axes[1, 0].text(0.02, 0.98, f'Current ε: {current_epsilon:.3f}', 
+                axes[1, 0].text(0.02, 0.98, f'Current epsilon: {current_epsilon:.3f}',
                                transform=axes[1, 0].transAxes, 
                                verticalalignment='top',
                                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
@@ -213,16 +213,16 @@ class TrainingMonitor:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 plot_filename = f"plots/training_progress_{timestamp}.png"
                 plt.savefig(plot_filename, dpi=150, bbox_inches='tight')
-                print(f"📊 Plot saved to {plot_filename}")
-                
-            # WICHTIG: Figure schließen um Memory zu sparen
+                print(f"Plot saved to {plot_filename}")
+
+            # Close figure to free memory
             plt.close(fig)
-            
+
         except Exception as e:
-            print(f"❌ Error creating plot: {e}")
+            print(f"Error creating plot: {e}")
             import traceback
             traceback.print_exc()
-            # Alle Figures schließen bei Fehlern
+            # Close all figures on error
             plt.close('all')
         
     def print_summary(self):

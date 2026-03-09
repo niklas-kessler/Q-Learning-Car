@@ -92,6 +92,7 @@ class Car(pg.sprite.Sprite):
         self.velocity = 0.0
         self.rotation = 0
         self.i_goals = 0
+        self.distance_next_goal = math.inf
 
     def update_sensors(self, init=False):
 

@@ -45,16 +45,17 @@ def load_checkpoint_if_available(online_net, target_net):
     
     model_path, step_number = find_latest_checkpoint()
     if not model_path:
-        print("📋 No checkpoint found - starting fresh training")
+        print("No checkpoint found - starting fresh training")
         return False, 0, EPSILON_START, deque(maxlen=100)
     
     try:
-        print(f"🔄 Loading checkpoint: {model_path}")
+        print(f"Loading checkpoint: {model_path}")
         checkpoint = torch.load(model_path, map_location=DEVICE, weights_only=False)
         
         # Load model weights
         online_net.load_state_dict(checkpoint['model_state_dict'])
         target_net.load_state_dict(checkpoint['model_state_dict'])
+        target_net.eval()
         
         # Restore training state
         step = step_number
@@ -64,15 +65,15 @@ def load_checkpoint_if_available(online_net, target_net):
         # Initialize reward buffer with checkpoint value
         rew_buffer = deque([avg_reward], maxlen=100)
         
-        print(f"✅ Resumed from step {step:,}")
-        print(f"🎯 Epsilon: {epsilon:.4f}")
-        print(f"🏆 Avg Reward: {avg_reward:.2f}")
+        print(f"Resumed from step {step:,}")
+        print(f"Epsilon: {epsilon:.4f}")
+        print(f"Avg Reward: {avg_reward:.2f}")
         
         return True, step, epsilon, rew_buffer
         
     except Exception as e:
-        print(f"❌ Error loading checkpoint: {e}")
-        print("📋 Starting fresh training instead")
+        print(f"Error loading checkpoint: {e}")
+        print("Starting fresh training instead")
         return False, 0, EPSILON_START, deque(maxlen=100)
 
 
@@ -138,6 +139,7 @@ rl_env = RacegameEnv(ai_car, render_mode="human")
 # Neural Networks - using central config for device
 online_net = Network(rl_env)
 target_net = Network(rl_env)
+target_net.eval()  # Target net must stay in eval mode - dropout would make targets stochastic
 
 # Optimizer with config learning rate
 optimizer = torch.optim.Adam(online_net.parameters(), lr=LEARNING_RATE)
@@ -152,12 +154,13 @@ if not checkpoint_loaded:
     step = 0
     epsilon = EPSILON_START
     rew_buffer = deque([0.0], maxlen=100)
-    print(f"🚀 STARTING FRESH TRAINING")
+    print("STARTING FRESH TRAINING")
 else:
-    print(f"🚀 RESUMING TRAINING from step {step:,}")
+    print(f"RESUMING TRAINING from step {step:,}")
 
 obs, _ = rl_env.reset()
 episode_reward = 0.0
+env_step = 0  # Counts real environment steps (one per game frame) - used for epsilon decay
 
 
 # Input-handlers
@@ -269,99 +272,70 @@ def save_training_results():
         print("Training data may not have been saved.")
 
 
-def rl_train():
-    global step, obs, episode_reward
-    
-    # Only train if we have enough samples
-    if len(replay_buffer) < MIN_REPLAY_SIZE:
-        return
-    
-    epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+def rl_env_step():
+    """Take one action in the environment and store the transition. Called once per game frame."""
+    global obs, episode_reward, env_step
 
-    # Choose action with epsilon-greedy policy
+    epsilon = np.interp(env_step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+
     if random.random() <= epsilon:
         action = rl_env.action_space.sample()
     else:
         action = online_net.act(obs)
 
     new_obs, rew, done, *_ = rl_env.step(action)
-    transition = (obs, action, rew, done, new_obs)
-    replay_buffer.append(transition)
+    replay_buffer.append((obs, action, rew, done, new_obs))
     obs = new_obs
-
     episode_reward += rew
+    env_step += 1
 
     if done:
         obs, _ = rl_env.reset()
         rew_buffer.append(episode_reward)
         episode_reward = 0.0
 
-    # Automatic continuation if performing well
-    if len(rew_buffer) >= 100:
-        if np.mean(rew_buffer) >= 200:  # Adjusted threshold for new reward system
-            obs, _ = rl_env.reset()
-            action = online_net.act(obs)
-            obs, _, done, *_ = rl_env.step(action)
-            if done:
-                obs, _ = rl_env.reset()
 
-    # Start Gradient Step - sample batch for training
+def rl_gradient_step():
+    """Sample a batch and do one gradient update. Called GRADIENT_STEPS_PER_FRAME times per frame."""
+    global step
+
     transitions = random.sample(replay_buffer, BATCH_SIZE)
 
-    obses = np.asarray([t[0] for t in transitions])
-    actions = np.asarray([t[1] for t in transitions])
-    rews = np.asarray([t[2] for t in transitions])
-    dones = np.asarray([t[3] for t in transitions])
-    new_obses = np.asarray([t[4] for t in transitions])
+    obses_t     = torch.as_tensor(np.asarray([t[0] for t in transitions]), dtype=torch.float32, device=DEVICE)
+    actions_t   = torch.as_tensor(np.asarray([t[1] for t in transitions]), dtype=torch.int64,   device=DEVICE).unsqueeze(-1)
+    rews_t      = torch.as_tensor(np.asarray([t[2] for t in transitions]), dtype=torch.float32, device=DEVICE).unsqueeze(-1)
+    dones_t     = torch.as_tensor(np.asarray([t[3] for t in transitions]), dtype=torch.float32, device=DEVICE).unsqueeze(-1)
+    new_obses_t = torch.as_tensor(np.asarray([t[4] for t in transitions]), dtype=torch.float32, device=DEVICE)
 
-    # Convert to tensors and move to device from config
-    obses_t = torch.as_tensor(obses, dtype=torch.float32, device=DEVICE)
-    actions_t = torch.as_tensor(actions, dtype=torch.int64, device=DEVICE).unsqueeze(-1)
-    rews_t = torch.as_tensor(rews, dtype=torch.float32, device=DEVICE).unsqueeze(-1)
-    dones_t = torch.as_tensor(dones, dtype=torch.float32, device=DEVICE).unsqueeze(-1)
-    new_obses_t = torch.as_tensor(new_obses, dtype=torch.float32, device=DEVICE)
-
-    # Compute targets using target network
     with torch.no_grad():
-        target_q_values = target_net(new_obses_t)
-        max_target_q_values = target_q_values.max(dim=1, keepdim=True)[0]
-        targets = rews_t + GAMMA * (1 - dones_t) * max_target_q_values
+        max_target_q = target_net(new_obses_t).max(dim=1, keepdim=True)[0]
+        targets = rews_t + GAMMA * (1 - dones_t) * max_target_q
 
-    # Compute current Q values
-    q_values = online_net(obses_t)
-    action_q_values = torch.gather(input=q_values, dim=1, index=actions_t)
-    
-    # Compute loss with gradient clipping
-    loss = nn.functional.mse_loss(action_q_values, targets)  # Changed to MSE loss
-    
-    # Exit early if loss becomes NaN
+    action_q_values = torch.gather(online_net(obses_t), dim=1, index=actions_t)
+    loss = nn.functional.mse_loss(action_q_values, targets)
+
     if torch.isnan(loss):
-        print("🚨 CRITICAL: Loss is NaN! Skipping training step...")
+        print("WARNING: Loss is NaN, skipping gradient step")
         return
 
-    # Gradient Descent Step with clipping
     optimizer.zero_grad()
     loss.backward()
-    torch.nn.utils.clip_grad_norm_(online_net.parameters(), max_norm=10.0)  # Gradient clipping
+    torch.nn.utils.clip_grad_norm_(online_net.parameters(), max_norm=10.0)
     optimizer.step()
 
-    # Update Target Network
     if step % TARGET_UPDATE_FREQ == 0:
         target_net.load_state_dict(online_net.state_dict())
+        target_net.eval()
 
-    # Log loss and basic metrics EVERY step for better plot continuity
-    epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+    epsilon = np.interp(env_step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
     avg_reward_100 = np.mean(rew_buffer) if len(rew_buffer) > 0 else 0
     last_episode_reward = rew_buffer[-1] if len(rew_buffer) > 0 else episode_reward
-    
-    # Log to monitor EVERY step (not just LOG_FREQ)
     monitor.log_step(step, last_episode_reward, loss.item(), epsilon, avg_reward_100)
 
-    # Enhanced console logging using config frequencies
     if step % LOG_FREQ == 0:
         print()
         print('=' * 50)
-        print(f'Step: {step}')
+        print(f'Gradient step: {step}  |  Env step: {env_step}')
         print(f'Avg Reward (last 100): {avg_reward_100:.2f}')
         print(f'Current Episode Reward: {episode_reward:.2f}')
         print(f'Last Completed Episode: {last_episode_reward:.2f}')
@@ -373,13 +347,13 @@ def rl_train():
             print(f'Max Reward: {max(rew_buffer):.2f}')
             print(f'Min Reward: {min(rew_buffer):.2f}')
         print('=' * 50)
-        
-        # Save model and metrics periodically
+
         if step % SAVE_FREQ == 0:
             model_path = f"models/model_step_{step}.pth"
             os.makedirs("models", exist_ok=True)
             save_model(online_net, model_path, {
                 'step': step,
+                'env_step': env_step,
                 'avg_reward': avg_reward_100,
                 'epsilon': epsilon,
                 'hyperparameters': {
@@ -391,9 +365,8 @@ def rl_train():
             })
             monitor.save_metrics()
 
-    # Generate plots using config frequency (moved outside LOG_FREQ for more frequent plotting)
     if step % PLOT_FREQ == 0 and step > 0:
-        print(f"📊 Generating plot at step {step}...")
+        print(f"Generating plot at step {step}...")
         monitor.plot_training_progress()
 
     step += 1
@@ -412,15 +385,16 @@ def update(dt):
     elif settings.GAME_STATUS == GameStatus.USER_CONTROLS:
         pass
     elif settings.GAME_STATUS == GameStatus.AI_TRAIN:
-        # Training logic
         if len(replay_buffer) < MIN_REPLAY_SIZE:
-            if len(replay_buffer) % 500 == 0:  # Log every 500 instead of 100 for less spam
+            if len(replay_buffer) % 500 == 0:
                 print(f"Filling replay buffer: {len(replay_buffer)}/{MIN_REPLAY_SIZE}")
             rl_fill_replay_buffer()
         else:
-            if step % 100 == 0:  # Quick debug log every 100 steps
-                print(f"Training step: {step} - Buffer size: {len(replay_buffer)}")
-            rl_train()
+            if env_step % 100 == 0:
+                print(f"Env step: {env_step} | Gradient step: {step} | Buffer: {len(replay_buffer)}")
+            rl_env_step()                          # one real environment step per game frame
+            for _ in range(GRADIENT_STEPS_PER_FRAME):
+                rl_gradient_step()                 # N gradient updates on the replay buffer
 
 
 pg.clock.schedule_interval(update, 1/settings.RENDER_FPS)
