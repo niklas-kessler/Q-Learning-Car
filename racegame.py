@@ -308,7 +308,9 @@ def rl_gradient_step():
     new_obses_t = torch.as_tensor(np.asarray([t[4] for t in transitions]), dtype=torch.float32, device=DEVICE)
 
     with torch.no_grad():
-        max_target_q = target_net(new_obses_t).max(dim=1, keepdim=True)[0]
+        # Double DQN: online net selects action, target net evaluates it
+        best_actions = online_net(new_obses_t).argmax(dim=1, keepdim=True)
+        max_target_q = target_net(new_obses_t).gather(1, best_actions)
         targets = rews_t + GAMMA * (1 - dones_t) * max_target_q
 
     action_q_values = torch.gather(online_net(obses_t), dim=1, index=actions_t)

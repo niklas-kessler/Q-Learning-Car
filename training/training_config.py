@@ -21,7 +21,7 @@ else:
 # ========================
 # NEURAL NETWORK (GPU OPTIMIZED)
 # ========================
-INPUT_SIZE = 8                    # Sensor inputs
+INPUT_SIZE = 9                    # 8 sensor inputs + velocity
 OUTPUT_SIZE = 8                   # Action space size
 NETWORK_HIDDEN_LAYERS = [128, 64] # Smaller net converges faster for an 8-input problem
 DROPOUT_RATE = 0.0                # No dropout - stochastic Q-values break DQN stability
@@ -43,7 +43,7 @@ TARGET_UPDATE_FREQ = 5000         # Update target network every N steps (increas
 # ========================
 EPSILON_START = 1.0
 EPSILON_END = 0.05
-EPSILON_DECAY = 50000             # Steps over which epsilon decays
+EPSILON_DECAY = 300000            # Steps over which epsilon decays
 
 # ========================
 # REWARD SYSTEM

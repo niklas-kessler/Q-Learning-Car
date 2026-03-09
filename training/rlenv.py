@@ -34,26 +34,27 @@ class RacegameEnv(gym.Env):
 
     def _get_obs(self):
         """
-        return {'f': self.car.sensor_val[0],
-                'fr': self.car.sensor_val[1],
-                'l': self.car.sensor_val[2],
-                'r': self.car.sensor_val[3],
-                'bl': self.car.sensor_val[4],
-                'b': self.car.sensor_val[5],
-                'br': self.car.sensor_val[6],
-                'fl': self.car.sensor_val[7]}
+        Returns a list of 9 floats:
+          [0-7] Sensor distances normalized to [0, 1]  (0 = wall touching, 1 = max sensor range)
+                order: f, fr, r, br, b, bl, l, fl
+          [8]   Car velocity normalized to [-1, 1]     (-1 = full reverse, 0 = stopped, 1 = full forward)
         """
-        # Ensure all sensor values are finite and within bounds
+        # Normalize sensor values to [0, 1]
         sensor_vals = []
         for val in self.car.sensor_val:
             if math.isnan(val) or math.isinf(val):
-                # Replace invalid values with safe default (max sensor length)
-                sensor_vals.append(float(GameSettings.SENSOR_LENGTH))
+                sensor_vals.append(1.0)
             else:
-                # Clamp to valid range
-                sensor_vals.append(max(0.0, min(float(val), float(GameSettings.SENSOR_LENGTH))))
-        
-        return sensor_vals
+                sensor_vals.append(max(0.0, min(float(val), float(GameSettings.SENSOR_LENGTH))) / GameSettings.SENSOR_LENGTH)
+
+        # Normalize velocity to [-1, 1]
+        from game.car import Car
+        velocity = self.car.velocity
+        if math.isnan(velocity) or math.isinf(velocity):
+            velocity = 0.0
+        velocity_norm = max(-1.0, min(1.0, velocity / Car.MAX_VELOCITY))
+
+        return sensor_vals + [velocity_norm]
 
     def _get_info(self):
         return {
