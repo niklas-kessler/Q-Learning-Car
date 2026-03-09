@@ -21,7 +21,7 @@ else:
 # ========================
 # NEURAL NETWORK (GPU OPTIMIZED)
 # ========================
-INPUT_SIZE = 9                    # 8 sensor inputs + velocity
+INPUT_SIZE = 11                   # 8 sensor inputs + velocity + angle to goal + distance to goal
 OUTPUT_SIZE = 8                   # Action space size
 NETWORK_HIDDEN_LAYERS = [128, 64] # Smaller net converges faster for an 8-input problem
 DROPOUT_RATE = 0.0                # No dropout - stochastic Q-values break DQN stability

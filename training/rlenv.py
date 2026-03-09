@@ -30,14 +30,47 @@ class RacegameEnv(gym.Env):
         self.render_mode = render_mode
 
         self.car = ai_car
-        self._prev_distance = math.inf  # Tracked across steps, not within a single step
+
+    def _get_goal_direction(self):
+        """
+        Returns (angle_norm, distance_norm) toward the next goal midpoint, both relative to the car.
+          angle_norm:    [-1, 1]  — 0 = straight ahead, ±1 = directly behind
+          distance_norm: [0, 1]  — 0 = at goal, 1 = maximum possible distance (window diagonal)
+        Returns (0.0, 1.0) when no goals are defined.
+        """
+        if not self.car.racetrack.goals:
+            return 0.0, 1.0
+
+        next_goal = self.car.racetrack.goals[self.car.i_goals % self.car.racetrack.n_goals]
+        goal_mid_x = (next_goal.x + next_goal.x2) / 2
+        goal_mid_y = (next_goal.y + next_goal.y2) / 2
+
+        dx = goal_mid_x - self.car.x
+        dy = goal_mid_y - self.car.y
+
+        # Distance normalized by window diagonal
+        dist = math.sqrt(dx ** 2 + dy ** 2)
+        max_dist = math.sqrt(GameSettings.WINDOW_WIDTH ** 2 + GameSettings.WINDOW_HEIGHT ** 2)
+        distance_norm = min(1.0, dist / max_dist)
+
+        # Angle relative to car heading, normalized to [-1, 1]
+        # Pyglet: rotation=0 faces +y (up), increases clockwise → heading vector = (sin(r), cos(r))
+        world_angle = math.atan2(dx, dy)  # angle from +y axis, clockwise
+        car_heading = math.radians(self.car.rotation)
+        relative_angle = world_angle - car_heading
+        relative_angle = (relative_angle + math.pi) % (2 * math.pi) - math.pi  # clamp to [-π, π]
+        angle_norm = relative_angle / math.pi
+
+        return angle_norm, distance_norm
 
     def _get_obs(self):
         """
-        Returns a list of 9 floats:
+        Returns a list of 11 floats:
           [0-7] Sensor distances normalized to [0, 1]  (0 = wall touching, 1 = max sensor range)
                 order: f, fr, r, br, b, bl, l, fl
           [8]   Car velocity normalized to [-1, 1]     (-1 = full reverse, 0 = stopped, 1 = full forward)
+          [9]   Angle to next goal normalized to [-1, 1] (0 = straight ahead, ±1 = behind)
+          [10]  Distance to next goal normalized to [0, 1] (0 = at goal, 1 = max distance)
         """
         # Normalize sensor values to [0, 1]
         sensor_vals = []
@@ -54,7 +87,9 @@ class RacegameEnv(gym.Env):
             velocity = 0.0
         velocity_norm = max(-1.0, min(1.0, velocity / Car.MAX_VELOCITY))
 
-        return sensor_vals + [velocity_norm]
+        angle_norm, distance_norm = self._get_goal_direction()
+
+        return sensor_vals + [velocity_norm, angle_norm, distance_norm]
 
     def _get_info(self):
         return {
@@ -62,76 +97,17 @@ class RacegameEnv(gym.Env):
         }
 
     def step(self, action):
-        # prev_distance comes from the END of the previous step (a real prior game frame).
-        # Reading it again here would give the same value as current_distance because
-        # car.action() only sets key flags - physics runs in the pyglet loop, not here.
-        prev_distance = self._prev_distance
-
         self.car.action(action)
 
         terminated = self.car.collision
         goal = self.car.goal
 
-        # Improved reward structure using config parameters with NaN protection
-        reward = 0.0
-
         if terminated:
-            reward = CRASH_PENALTY  # Heavy penalty for crashing
+            reward = CRASH_PENALTY
         elif goal:
-            reward = GOAL_REWARD   # Big reward for reaching goal
+            reward = GOAL_REWARD
         else:
-            # Distance-based reward (encourage getting closer to goal)
-            current_distance = self.car.distance_next_goal
-
-            # Validate distances to prevent NaN
-            if math.isnan(current_distance) or math.isinf(current_distance):
-                current_distance = 1000.0  # Safe default
-            if math.isnan(prev_distance) or math.isinf(prev_distance):
-                prev_distance = 1000.0  # Safe default
-
-            if current_distance < prev_distance:
-                reward += DISTANCE_REWARD_SCALE * GOAL_REWARD  # Reward for getting closer
-            else:
-                reward -= DISTANCE_REWARD_SCALE * GOAL_REWARD * 0.2  # Small penalty for getting further
-            
-            # Velocity-based reward (encourage movement but not too fast)
-            speed = abs(self.car.velocity)
-            
-            # Validate velocity
-            if math.isnan(speed) or math.isinf(speed):
-                speed = 0.0  # Safe default
-                
-            if speed > 50:  # Encourage some speed
-                reward += VELOCITY_REWARD_SCALE * GOAL_REWARD
-            elif speed < 10:  # Discourage standing still
-                reward -= VELOCITY_REWARD_SCALE * GOAL_REWARD * 0.2
-                
-            # Sensor-based reward (avoid walls)
-            try:
-                min_sensor_val = min(self.car.sensor_val)
-                # Validate sensor value
-                if math.isnan(min_sensor_val) or math.isinf(min_sensor_val):
-                    min_sensor_val = GameSettings.SENSOR_LENGTH  # Safe default
-                    
-                if min_sensor_val < 20:  # Close to wall
-                    # Use magnitude of crash penalty so this stays independent of goal reward
-                    reward -= SENSOR_PENALTY_SCALE * abs(CRASH_PENALTY)
-                elif min_sensor_val > 35:  # Safe distance from walls
-                    reward += SENSOR_PENALTY_SCALE * abs(CRASH_PENALTY) * 0.3
-            except (ValueError, TypeError):
-                # Handle empty or invalid sensor values
-                pass
-                
-            # Small positive reward for surviving
-            reward += SURVIVAL_REWARD
-
-        # Final validation of reward value
-        if math.isnan(reward) or math.isinf(reward):
-            print("WARNING: Invalid reward detected, using fallback value")
-            reward = -1.0  # Safe fallback reward
-
-        # Save current distance so the NEXT step can compare against it
-        self._prev_distance = self.car.distance_next_goal
+            reward = SURVIVAL_REWARD
 
         observation = self._get_obs()
         info = self._get_info()
@@ -152,7 +128,6 @@ class RacegameEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         self.car.reset()
-        self._prev_distance = math.inf  # Reset so first step doesn't compare stale values
         return self._get_obs(), self._get_info()
 
     # def close(self):
